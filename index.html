@@ -1,0 +1,16 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<title>NO REAL NO HERE</title><link rel="stylesheet" href="style.css"></head><body>
+<canvas id="c"></canvas>
+<div id="menu" class="screen"><h1>NO REAL NO HERE</h1>
+<button id="bNew">솔로 플레이</button><button id="bCont">이어하기</button><button id="bMulti">멀티플레이</button><button id="bCosmetic">캐릭터 꾸미기</button><button id="bEndings">엔딩 도감</button><button id="bAchievements">업적</button><button id="bSet">설정</button><button id="bHelp">조작 방법</button><p id="hint">PC: WASD 이동 · 마우스 시점 · Shift 달리기 · 달리기+Space 점프 가속 · C 웅크리기(소음 감소) · E 상호작용 · Tab 메모 · Esc 일시정지</p><p id="est">현재 개발 빌드: LEVEL 0~6 + 특별 레벨 1개 · 각 레벨의 탐색 분량은 계속 확장 중입니다.</p></div>
+<div id="hud" class="hidden"><div id="zr" class="touch-only"></div><div id="cross"></div><div id="net" class="hidden"></div><div id="prompt"></div><div id="count"></div>
+<button id="bPause">⏸</button><button id="bClue">메모</button><button id="bChat">채팅</button><button id="bVoice">🎙 음성 켜기</button><div id="chatBox" class="hidden"><div id="chatHead">팀 채팅 <button id="chatClose">×</button></div><div id="chatLog" aria-live="polite"></div><form id="chatForm"><input id="chatInput" maxlength="180" placeholder="메시지 입력…" autocomplete="off"><button type="submit">전송</button></form><div id="voiceStatus">음성 채팅은 멀티플레이 방에서만 사용 가능</div></div>
+<div id="stick" class="touch-only"><div id="knob"></div></div>
+<button id="bRun" class="touch-only">달리기</button><button id="bCrouch" class="touch-only">웅크리기</button><button id="bAct" class="touch-only">조사</button></div>
+<div id="toast"></div><div id="fade"></div><div id="panel" class="screen hidden"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>window.THREE||document.write('<script src="libs/three.min.js"><\/script>')</script>
+<script src="shared/levels.js"></script><script src="src/saveManager.js"></script><script src="src/ui.js"></script><script src="src/audioManager.js"></script>
+<script src="src/interaction.js"></script><script src="src/player.js"></script><script src="src/levelManager.js"></script><script src="src/ice-config.js"></script><script src="src/net.js"></script><script src="src/slots.js"></script><script src="src/main.js"></script>
+</body></html>
