@@ -145,9 +145,64 @@ const Levels={defs:NRNH.LEVELS,scene:null,grp:null,lights:[],nl:5,panels:[],map:
     if(st.glitchShop.exists){const q=st.glitchShop,x=(q.x+.5)*CS,z=(q.y+.5)*CS;const gm=new THREE.MeshStandardMaterial({color:0xff27d5,emissive:0x8b00aa,emissiveIntensity:1.4,wireframe:true});const glitch=new THREE.Mesh(new THREE.IcosahedronGeometry(.75,1),gm);glitch.position.set(x,1.35,z);g.add(glitch);const glow=new THREE.PointLight(0xd52bff,1.5,8);glow.position.set(x,1.5,z);g.add(glow);
       Interact.add({x,z,r:3,label:()=>'[E] 열^#(쇠 가 — GL!TCH SHOP',act:()=>Game.enterShop()});}
   }
-  // Safe level portal is always available inside the glitch shop.
-  if(d.id==='glitchshop'){const x=12*CS,z=11*CS;const sm=new THREE.MeshStandardMaterial({color:0x64f4ff,emissive:0x087b88,emissiveIntensity:1.1});const portal=new THREE.Mesh(new THREE.TorusGeometry(1.05,.12,8,24),sm);portal.position.set(x,1.5,z);g.add(portal);Interact.add({x,z,r:3,label:()=>'[E] 안전 레벨로 이동',act:()=>Game.enterSafeLevel()});
-    const stock=[['응급 회복',12,'체력 +35'],['정신 안정제',15,'정신력 +35'],['스태미나 음료',8,'스태미나 +50']];const bx=17*CS,bz=11*CS;Interact.add({x:bx,z:bz,r:3,label:()=>'[E] 상점 물품 확인',act:()=>Game.shopMenu(stock)});}
+  // GL!TCH SHOP: 상품을 실제 3D 진열대로 보여주고 가까이 가면 구매 메뉴를 연다.
+  if(d.id==='glitchshop'){
+    const x=12*CS,z=11*CS;
+    const sm=new THREE.MeshStandardMaterial({color:0x64f4ff,emissive:0x087b88,emissiveIntensity:1.1});
+    const portal=new THREE.Mesh(new THREE.TorusGeometry(1.05,.12,8,24),sm);
+    portal.position.set(x,1.5,z);g.add(portal);
+    Interact.add({x,z,r:3,label:()=>'[E] 안전 레벨로 이동',act:()=>Game.enterSafeLevel()});
+
+    const stock=[['응급 회복',12,'체력 +35'],['정신 안정제',15,'정신력 +35'],['스태미나 음료',8,'스태미나 +50']];
+    const products=[
+      {name:'응급 회복',cost:12,color:0xe74c3c,shape:'box'},
+      {name:'정신 안정제',cost:15,color:0x9b59b6,shape:'bottle'},
+      {name:'스태미나 음료',cost:8,color:0x2ecc71,shape:'can'},
+      {name:'팀원 순간이동기',cost:22,color:0x3498db,shape:'cube'},
+      {name:'팀원 나침반',cost:18,color:0xf1c40f,shape:'compass'},
+      {name:'부활 십자가',cost:35,color:0xff5555,shape:'cross'},
+      {name:'워키토키',cost:30,color:0x555b66,shape:'radio'}
+    ];
+    const spots=[[7,6],[12,6],[17,6],[22,6],[7,15],[12,15],[17,15]];
+    products.forEach((p,i)=>{
+      const [cx,cy]=spots[i],px=(cx+.5)*CS,pz=(cy+.5)*CS;
+      const standMat=new THREE.MeshStandardMaterial({color:0x373747,metalness:.55,roughness:.4});
+      const stand=new THREE.Mesh(new THREE.CylinderGeometry(.48,.58,.22,12),standMat);
+      stand.position.set(px,.55,pz);g.add(stand);
+      const mat=new THREE.MeshStandardMaterial({color:p.color,emissive:p.color,emissiveIntensity:.18,metalness:.25,roughness:.35});
+      const item=new THREE.Group();
+      if(p.shape==='box'||p.shape==='cube'){
+        const body=new THREE.Mesh(new THREE.BoxGeometry(.48,.48,.38),mat);item.add(body);
+        if(p.shape==='box'){const band=new THREE.Mesh(new THREE.BoxGeometry(.12,.5,.4),new THREE.MeshStandardMaterial({color:0xf5f5f5}));item.add(band)}
+      }else if(p.shape==='bottle'){
+        const body=new THREE.Mesh(new THREE.CylinderGeometry(.17,.2,.42,12),mat);body.position.y=-.02;item.add(body);
+        const cap=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,.1,10),new THREE.MeshStandardMaterial({color:0xdddddd}));cap.position.y=.24;item.add(cap);
+      }else if(p.shape==='can'){
+        const body=new THREE.Mesh(new THREE.CylinderGeometry(.19,.19,.48,16),mat);item.add(body);
+        const top=new THREE.Mesh(new THREE.CylinderGeometry(.15,.15,.025,16),new THREE.MeshStandardMaterial({color:0xcbd5dc,metalness:.7}));top.position.y=.25;item.add(top);
+      }else if(p.shape==='compass'){
+        const body=new THREE.Mesh(new THREE.CylinderGeometry(.24,.24,.1,20),mat);item.add(body);
+        const needle=new THREE.Mesh(new THREE.ConeGeometry(.07,.27,4),new THREE.MeshStandardMaterial({color:0xfff3b0}));needle.position.y=.1;needle.rotation.z=Math.PI;item.add(needle);
+      }else if(p.shape==='cross'){
+        const a=new THREE.Mesh(new THREE.BoxGeometry(.16,.52,.12),mat),b=new THREE.Mesh(new THREE.BoxGeometry(.48,.16,.12),mat);b.position.y=.05;item.add(a,b);
+      }else if(p.shape==='radio'){
+        const body=new THREE.Mesh(new THREE.BoxGeometry(.42,.38,.2),mat);item.add(body);
+        const antenna=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,.28,6),new THREE.MeshStandardMaterial({color:0xaaaaaa}));antenna.position.set(.12,.31,0);antenna.rotation.z=-.18;item.add(antenna);
+        const dial=new THREE.Mesh(new THREE.SphereGeometry(.045,8,8),new THREE.MeshStandardMaterial({color:0x75e6ff,emissive:0x277f99}));dial.position.set(-.1,.06,.12);item.add(dial);
+      }
+      item.position.set(px,1.05,pz);g.add(item);
+      const canvas=document.createElement('canvas');canvas.width=512;canvas.height=96;
+      const ctx=canvas.getContext('2d');ctx.fillStyle='rgba(8,8,16,.88)';ctx.fillRect(0,0,512,96);
+      ctx.strokeStyle='#7df9ff';ctx.lineWidth=4;ctx.strokeRect(3,3,506,90);
+      ctx.fillStyle='#ffffff';ctx.font='bold  thirtypx sans-serif'.replace('thirty','30px');ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(p.name+' · '+p.cost+' 코인',256,48);
+      const tex=new THREE.CanvasTexture(canvas);const label=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));
+      label.scale.set(2.1,.4,1);label.position.set(px,1.95,pz);label.renderOrder=12;g.add(label);
+      Interact.add({x:px,z:pz,r:2.7,label:()=> '[E] '+p.name+' 확인 / 구매',act:()=>Game.shopMenu(stock)});
+    });
+    // 중앙 카운터에서도 전체 상품 목록을 열 수 있다.
+    const bx=17*CS,bz=11*CS;Interact.add({x:bx,z:bz,r:3,label:()=>'[E] 전체 상점 목록',act:()=>Game.shopMenu(stock)});
+  }
   // 퍼즐 장치(키패드/분전함): 벽에 붙여 배치
   d.puzzles.forEach(p=>{if(!p.at)return;const c=Rules.cellPos(p.at),dr=Rules.wallDir(p.at.wall),horiz=dr[0]!==0,code=p.type==='code';
    const b=new THREE.Mesh(new THREE.BoxGeometry(horiz?.15:(code?.5:.7),code?.7:.9,horiz?(code?.5:.7):.15),new THREE.MeshLambertMaterial({color:code?0x222222:0x333a33,emissive:code?0x112211:0x0a1a0a}));
