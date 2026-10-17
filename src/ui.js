@@ -9,7 +9,7 @@ const UI={$:id=>document.getElementById(id),
  net(t){const e=this.$('net');e.textContent=t||'';e.classList.toggle('hidden',!t)},
 settings(back){const s=Save.data.settings,R=(id,t,a,b,st,v)=>`<label>${t}<input id="${id}" type="range" min="${a}" max="${b}" step="${st}" value="${v}"></label>`;
   this.panel(`<h2>설정</h2>${R('sv','볼륨',0,1,.05,s.vol)}${R('sp','마우스 감도',.3,3,.1,s.sensPC)}${R('sm','터치 감도',.3,3,.1,s.sensMob)}${R('sf','시야각(FOV)',60,100,1,s.fov)}${R('sz','조작 버튼 크기',.7,1.5,.1,s.btn)}
-  <label>그래픽<select id="sq"><option value="low">낮음</option><option value="mid">중간</option><option value="high">높음(그림자)</option></select></label>
+  <label>그래픽<select id="sq"><option value="auto">자동 최적화(FPS 우선)</option><option value="low">낮음(최고 FPS)</option><option value="mid">중간</option><option value="high">높음(그림자)</option></select></label>
   <label>화면 흔들림<select id="sk"><option value="1">켜기</option><option value="0">끄기</option></select></label>
   <h3>게임 난이도</h3><label>난이도<select id="sdiff"><option value="easy">쉬움 · 업적 보상 2코인</option><option value="normal">보통 · 업적 보상 5코인</option><option value="hard">어려움 · 업적 보상 8코인</option><option value="nightmare">악몽 · 업적 보상 12코인</option></select></label><p>난이도는 업적 달성 시 지급되는 꾸미기 코인에 영향을 줍니다.</p><h3>음성 채팅 설정</h3><p>음성은 멀티플레이에서만 작동합니다. 음성 켜기 버튼을 눌러 마이크 권한을 허용하세요.</p>
   <label>팀원 음량 <span id="svoVal">${Math.round((s.voiceOut??.85)*100)}%</span><input id="svo" type="range" min="0" max="1" step=".05" value="${s.voiceOut??.85}"></label>
