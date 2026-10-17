@@ -199,7 +199,7 @@ pool1.toxicZones=[{x1:20,y1:25,x2:26,y2:29},{x1:48,y1:32,x2:54,y2:34}];
 pool1.poolFloor=1;
 const pool2Meta=['level9b','LEVEL 9 — POOLROOMS / FLOOR 2','water','2층의 물은 고요하다. 아래층에서 들리는 물소리가 천장 안쪽에서 울린다.','2층의 정비 통로에서 밸브 부품 4개를 모으고 최종 배수문을 열어라.'];
 const pool2=makeLargeLevel(pool2Meta,2);
-pool2.poolFloor=2;pool2.next='level10';pool2.start={cx:3,cy:27,yaw:0};pool2.toxicZones=[{x1:30,y1:25,x2:36,y2:29},{x1:55,y1:32,x2:61,y2:34}];
+pool2.poolFloor=2;pool2.next='level10';pool2.start={cx:3,cy:27,yaw:0};pool2.toxicZones=[{x1:30,y1:25,x2:36,y2:29},{x1:55,y1:32,x2:56,y2:34}];
 pool2.items=[{cx:8,cy:18},{cx:20,cy:38},{cx:47,cy:17},{cx:67,cy:40}];
 pool2.notes=[{cx:5,cy:12,text:()=> '2층 기록: 초록빛 수면에 맨살이 닿으면 즉시 물 밖으로 나와라.'},{cx:18,cy:40,text:()=> '배수 밸브는 계단 반대편 정비실에 있다.'},{cx:43,cy:12,text:()=> '난간 너머 아래층에는 아무도 없어야 한다.'},{cx:68,cy:42,key:true,text:()=> '마지막 부품을 꽂으면 동쪽 배수문이 열린다.'}];
 pool2.puzzles=[{id:'level9b_exit',type:'items',need:4,door:'exit',at:{cx:71,cy:27,wall:'N'}}];
@@ -223,7 +223,7 @@ function expandLevel(L){
  L.map=expanded.map(r=>r.join(''));
  const point=v=>Math.floor((v+.5)*LEVEL_EXPANSION);
  const startRange=v=>Math.floor(v*LEVEL_EXPANSION);
- const endRange=v=>Math.ceil((v+1)*LEVEL_EXPANSION)-1;
+ const endRange=v=>Math.floor((v+1)*LEVEL_EXPANSION)-1;
  const walk=(o,parentKey='')=>{
   if(!o||typeof o!=='object')return;
   if(Array.isArray(o)){o.forEach(v=>walk(v,parentKey));return}
