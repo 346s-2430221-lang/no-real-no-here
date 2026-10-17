@@ -15,25 +15,29 @@ const clean=s=>String(s==null?'':s).replace(/[<>&"'`\u0000-\u001f]/g,'').trim().
 const LV=r=>LEVELS[r.level],ST=r=>r.states[r.level];
 const ensure=(r,id)=>r.states[id]||(r.states[id]=Rules.mkState(crypto.randomBytes(4).readUInt32BE()&0x7fffffff));
 const view=r=>{const st=ST(r),texts={};st.notes.forEach(i=>texts[i]=Rules.noteText(LV(r),st,i));return{notes:st.notes,items:st.items,solved:st.solved,texts}};
-const pub=p=>({id:p.id,name:p.name,slot:p.slot,online:!!p.ws,x:p.x,z:p.z,yaw:p.yaw,downed:!!p.downed});
+const pub=p=>({id:p.id,name:p.name,slot:p.slot,online:!!p.ws,x:p.x,z:p.z,yaw:p.yaw,downed:!!p.downed,ready:!!p.ready,spectator:!!p.spectator});
+const lobby=r=>({t:'lobby',code:r.code,host:r.host,players:[...r.players.values()].map(pub)});
+const lobbyAll=r=>{for(const p of r.players.values())send(p.ws,lobby(r))};
 const spawn=(r,p)=>{const s=Rules.startPt(LV(r));p.x=s[0]+(p.slot%2)*.8;p.z=s[1];p.yaw=LV(r).start.yaw;p.pt=Date.now()};
 const dist=(p,q)=>Math.hypot(p.x-q[0],p.z-q[1]);
-function joined(r,p,re){return{t:'joined',re:!!re,code:r.code,you:p.id,token:p.token,slot:p.slot,host:r.host,level:r.level,state:view(r),players:[...r.players.values()].map(q=>({...pub(q),host:q.id===r.host}))}}
+function joined(r,p,re){return{t:'joined',re:!!re,code:r.code,you:p.id,token:p.token,slot:p.slot,host:r.host,started:!!r.started,ready:!!p.ready,level:r.level,state:view(r),players:[...r.players.values()].map(q=>({...pub(q),host:q.id===r.host}))}}
 function addPlayer(r,ws,name){const used=new Set([...r.players.values()].map(p=>p.slot));let slot=0;while(used.has(slot))slot++;
- const p={id:String(nid++),token:crypto.randomBytes(12).toString('hex'),name:clean(name),slot,ws,dc:0,bucket:60,bt:Date.now(),sub:0,wrong:0,lockUntil:0,downed:false};spawn(r,p);r.players.set(p.id,p);if(!r.host)r.host=p.id;return p}
-function removePlayer(r,p){r.players.delete(p.id);bc(r,{t:'pleave',id:p.id});if(r.host===p.id){const n=r.players.keys().next().value||null;r.host=n;if(n)bc(r,{t:'phost',id:n})}if(!r.players.size)rooms.delete(r.code)}
+ const p={id:String(nid++),token:crypto.randomBytes(12).toString('hex'),name:clean(name),slot,ws,ready:false,spectator:false,dc:0,bucket:60,bt:Date.now(),sub:0,wrong:0,lockUntil:0,downed:false};spawn(r,p);r.players.set(p.id,p);if(!r.host)r.host=p.id;return p}
+function removePlayer(r,p){r.players.delete(p.id);bc(r,{t:'pleave',id:p.id});if(r.host===p.id){const n=r.players.keys().next().value||null;r.host=n;if(n)bc(r,{t:'phost',id:n})}if(!r.players.size)rooms.delete(r.code);else if(!r.started)lobbyAll(r)}
 wss.on('connection',ws=>{let room=null,pl=null;ws.on('error',()=>{});
  ws.on('message',buf=>{let m;try{m=JSON.parse(buf.toString())}catch(e){return}if(!m||typeof m!=='object'||typeof m.t!=='string')return;const now=Date.now();
   if(pl){pl.bucket=Math.min(60,pl.bucket+(now-pl.bt)/1000*40);pl.bt=now;if(--pl.bucket<0)return}
   if(!pl){ // 방 입장 전에 허용되는 메시지
-   if(m.t==='create'){room={code:newCode(),level:'level0',states:{},players:new Map(),host:null,dead:0};rooms.set(room.code,room);ensure(room,'level0');pl=addPlayer(room,ws,m.name);send(ws,joined(room,pl))}
+   if(m.t==='create'){room={code:newCode(),level:'level0',states:{},players:new Map(),host:null,dead:0,started:false};rooms.set(room.code,room);ensure(room,'level0');pl=addPlayer(room,ws,m.name);send(ws,joined(room,pl));send(ws,lobby(room))}
    else if(m.t==='join'){const r=typeof m.code==='string'&&/^[A-Z2-9]{6}$/.test(m.code)&&rooms.get(m.code);if(!r)return send(ws,{t:'err',msg:'잘못된 방 코드입니다'});
-    if(r.players.size>=MAXP)return send(ws,{t:'err',msg:'방이 가득 찼습니다 (최대 '+MAXP+'명)'});room=r;pl=addPlayer(r,ws,m.name);send(ws,joined(r,pl));bc(r,{t:'pjoin',p:{...pub(pl),host:false}},pl.id)}
+    if(r.players.size>=MAXP)return send(ws,{t:'err',msg:'방이 가득 찼습니다 (최대 '+MAXP+'명)'});room=r;pl=addPlayer(r,ws,m.name);send(ws,joined(r,pl));bc(r,{t:'pjoin',p:{...pub(pl),host:false}},pl.id);lobbyAll(r)}
    else if(m.t==='rejoin'){const r=typeof m.code==='string'&&rooms.get(m.code),p=r&&[...r.players.values()].find(q=>typeof m.token==='string'&&q.token===m.token);
-    if(!p)return send(ws,{t:'err',msg:'재접속할 수 없습니다 (방이 사라졌거나 시간이 지남)'});if(p.ws&&p.ws!==ws)try{p.ws.close()}catch(e){}room=r;pl=p;p.ws=ws;p.dc=0;send(ws,joined(r,p,true));bc(r,{t:'pstate',id:p.id,online:true},p.id)}
+    if(!p)return send(ws,{t:'err',msg:'재접속할 수 없습니다 (방이 사라졌거나 시간이 지남)'});if(p.ws&&p.ws!==ws)try{p.ws.close()}catch(e){}room=r;pl=p;p.ws=ws;p.dc=0;send(ws,joined(r,p,true));bc(r,{t:'pstate',id:p.id,online:true},p.id);lobbyAll(r)}
    return}
   const L=LV(room),st=ST(room);
   switch(m.t){
+   case'ready':{if(room.started)return send(ws,{t:'err',msg:'게임이 이미 시작되었습니다'});pl.ready=!!m.ready;lobbyAll(room);break}
+   case'start':{if(room.started)return send(ws,{t:'err',msg:'게임이 이미 시작되었습니다'});if(pl.id!==room.host)return send(ws,{t:'err',msg:'방장만 시작할 수 있습니다'});const players=[...room.players.values()];if(players.some(p=>!p.ready))return send(ws,{t:'err',msg:'모든 플레이어가 준비 완료를 눌러야 합니다'});room.started=true;for(const p of players)send(p.ws,{t:'gameStart',code:room.code,you:p.id,token:p.token,slot:p.slot,host:room.host,level:room.level,state:view(room),players:players.map(pub)});break}
    case'chat':{if(typeof m.text!=='string')return;const text=m.text.replace(/[\u0000-\u001f]/g,' ').trim().slice(0,180);if(!text)return;bc(room,{t:'chat',id:pl.id,name:pl.name,text,at:now});send(ws,{t:'chat',id:pl.id,name:pl.name,text,at:now});break}
    case'signal':{if(typeof m.to!=='string'||!room.players.has(m.to)||!m.data||typeof m.data!=='object')return;const target=room.players.get(m.to);if(target&&target.ws)send(target.ws,{t:'signal',from:pl.id,data:m.data});break}
    case'teleport':{if(pl.downed)return send(ws,{t:'err',msg:'쓰러진 동안에는 순간이동할 수 없다'});if(typeof m.target!=='string'||!room.players.has(m.target)||m.target===pl.id)return;const target=room.players.get(m.target);if(!target||!target.ws||target.downed)return;const x=target.x+((pl.slot%2)?1.1:-1.1),z=target.z+0.8;if(Rules.solidAt(L,st,x,z))return send(ws,{t:'err',msg:'팀원 주변에 안전한 공간이 없다'});pl.x=x;pl.z=z;pl.pt=now;send(ws,{t:'teleport',id:pl.id,x,z});bc(room,{t:'pos',p:[{id:pl.id,x,z,yaw:pl.yaw}]});break}
@@ -53,7 +57,7 @@ wss.on('connection',ws=>{let room=null,pl=null;ws.on('error',()=>{});
    case'exit':{if(!Rules.doorOpen(L,st,'exit')||dist(pl,Rules.exitPt(L))>5)return;if(!L.next)return bc(room,{t:'end'});
     room.level=L.next;ensure(room,room.level);for(const q of room.players.values())spawn(room,q);bc(room,{t:'level',id:room.level,state:view(room)});break}
    case'leave':removePlayer(room,pl);room=null;pl=null;break}});
- ws.on('close',()=>{if(room&&pl&&pl.ws===ws){pl.ws=null;pl.dc=Date.now();bc(room,{t:'pstate',id:pl.id,online:false})}})});
+ ws.on('close',()=>{if(room&&pl&&pl.ws===ws){pl.ws=null;pl.dc=Date.now();bc(room,{t:'pstate',id:pl.id,online:false});if(!room.started)lobbyAll(room)}})});
 setInterval(()=>{for(const r of rooms.values()){const ch=[];for(const p of r.players.values())if(p.dirty){p.dirty=false;ch.push({id:p.id,x:+p.x.toFixed(2),z:+p.z.toFixed(2),yaw:+p.yaw.toFixed(2)})}if(ch.length)bc(r,{t:'pos',p:ch})}},100);
 setInterval(()=>{const now=Date.now();for(const r of [...rooms.values()])for(const p of [...r.players.values()])if(!p.ws&&p.dc&&now-p.dc>30000)removePlayer(r,p)},5000);
 if(require.main===module)server.listen(PORT,'0.0.0.0',()=>console.log('NO REAL NO HERE server on :'+PORT));
