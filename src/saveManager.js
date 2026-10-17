@@ -1,7 +1,7 @@
 // 저장 슬롯 시스템. 슬롯마다 독립된 localStorage 키를 쓰고, 쓰기 전에 이전 정상 데이터를 _bak으로 보존한다.
 const isObj=v=>!!v&&typeof v==='object'&&!Array.isArray(v);
 const Save={IDX:'nrnh_slots_v1',GS:'nrnh_settings_v1',VER:4,GAME:'NO REAL NO HERE',MAIN:['level0','level1','level2','level3','level4','level5','level6',...Array.from({length:24},(_,i)=>'level'+(i+7)),'level9b'],data:null,id:null,gs:null,idx:{order:[],last:null,legacy:0},err:false,recovered:false,
- defGS(){return{vol:.6,sensPC:1,sensMob:1,quality:'mid',fov:72,btn:1,srv:'',name:'',voiceOut:.85,voicePTT:false,voiceMute:false,voiceKey:'KeyV'}},
+ defGS(){return{vol:.6,sensPC:1,sensMob:1,quality:'auto',fov:72,btn:1,srv:'',name:'',voiceOut:.85,voicePTT:false,voiceMute:false,voiceKey:'KeyV'}},
  world(){return{team:{mara:'unknown',jin:'unknown'},keys:[],obs:[],env:{},fake:{taken:[],seen:0,retry:null,retryOk:false},done:{},ptypes:[]}},
  blank(name,mode){const t=Date.now();return{ver:this.VER,id:'s'+t.toString(36)+Math.floor(Math.random()*46656).toString(36),name:name||'',mode:mode||'solo',created:t,saved:t,play:0,level:'level0',pos:null,cp:null,started:false,lv:{},unl:{level0:true},
   diff:'normal',fear:'normal',acc:{flicker:true,shake:true,loud:true,fx:true},wallet:0,total:0,runCoins:0,totalRunCoins:0,health:100,stamina:100,sanity:100,earned:{},owned:[],equip:{c:'c0',h:'h0'},ach:{},endings:{},world:this.world()}},
@@ -17,11 +17,11 @@ const Save={IDX:'nrnh_slots_v1',GS:'nrnh_settings_v1',VER:4,GAME:'NO REAL NO HER
   if(!isObj(d.ach))d.ach={};if(!isObj(d.endings))d.endings={};
   const W=d.world=Object.assign(this.world(),isObj(d.world)?d.world:{});if(!isObj(W.team))W.team=this.world().team;for(const k of['mara','jin'])if(!['unknown','rescued','missing','dead'].includes(W.team[k]))W.team[k]='unknown';
   for(const k of['keys','obs','ptypes'])if(!Array.isArray(W[k]))W[k]=[];if(!isObj(W.env))W.env={};W.fake=Object.assign(this.world().fake,isObj(W.fake)?W.fake:{});if(!Array.isArray(W.fake.taken))W.fake.taken=[];if(!isObj(W.done))W.done={};return d},
- load(){let g=this.rd(this.GS);if(!isObj(g))g=null;const had=!!g;this.gs=Object.assign(this.defGS(),g||{});const n=(k,a,b)=>this.gs[k]=this.num(this.gs[k],this.defGS()[k],a,b);n('vol',0,1);n('sensPC',.3,3);n('sensMob',.3,3);n('fov',60,100);n('btn',.7,1.5);n('voiceOut',0,1);this.gs.voicePTT=!!this.gs.voicePTT;this.gs.voiceMute=!!this.gs.voiceMute;if(!['low','mid','high'].includes(this.gs.quality))this.gs.quality='mid';
+ load(){let g=this.rd(this.GS);if(!isObj(g))g=null;const had=!!g;this.gs=Object.assign(this.defGS(),g||{});const n=(k,a,b)=>this.gs[k]=this.num(this.gs[k],this.defGS()[k],a,b);n('vol',0,1);n('sensPC',.3,3);n('sensMob',.3,3);n('fov',60,100);n('btn',.7,1.5);n('voiceOut',0,1);this.gs.voicePTT=!!this.gs.voicePTT;this.gs.voiceMute=!!this.gs.voiceMute;if(!['low','mid','high','auto'].includes(this.gs.quality))this.gs.quality='auto';
   this.gs.name=String(this.gs.name||'').slice(0,12);this.gs.srv=String(this.gs.srv||'').slice(0,200);
   const i=this.rd(this.IDX);this.idx=isObj(i)&&Array.isArray(i.order)?{order:i.order.filter(x=>typeof x==='string'),last:typeof i.last==='string'?i.last:null,legacy:i.legacy|0}:{order:[],last:null,legacy:0};
   const old=this.rd('nrnh_save_v2')||this.rd('nrnh_save_v1');
-  if(!had&&isObj(old)&&isObj(old.settings)){const s=old.settings;for(const k of['vol','sensPC','sensMob','fov','btn'])if(Number.isFinite(+s[k]))this.gs[k]=+s[k];if(['low','mid','high'].includes(s.quality))this.gs.quality=s.quality;this.n2=1;n('vol',0,1);n('sensPC',.3,3);n('sensMob',.3,3);n('fov',60,100);n('btn',.7,1.5)}
+  if(!had&&isObj(old)&&isObj(old.settings)){const s=old.settings;for(const k of['vol','sensPC','sensMob','fov','btn'])if(Number.isFinite(+s[k]))this.gs[k]=+s[k];if(['low','mid','high','auto'].includes(s.quality))this.gs.quality=s.quality;this.n2=1;n('vol',0,1);n('sensPC',.3,3);n('sensMob',.3,3);n('fov',60,100);n('btn',.7,1.5)}
   if(!this.idx.legacy){this.idx.legacy=1;if(isObj(old)&&old.started){const d=this.blank('이전 게임');d.level=old.level;d.pos=old.pos;d.started=true;d.lv=isObj(old.lv)?old.lv:{};d.diff='normal';this.norm(d);if(this.write(d)){this.idx.order.push(d.id);this.idx.last=d.id}}this.wIdx()}
   this.idx.order=this.idx.order.filter((x,k,a)=>a.indexOf(x)===k);this.clear();return this.data},
  clear(){this.data=this.blank('','solo');this.data.settings=this.gs;this.id=null},
