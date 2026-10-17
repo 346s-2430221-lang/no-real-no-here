@@ -28,6 +28,10 @@ for (const [id, L] of Object.entries(LEVELS)) {
   }
   for(const z of L.toxicZones||[]) for(let y=z.y1;y<=z.y2;y++)for(let x=z.x1;x<=z.x2;x++)assert.ok(inside(x,y)&&L.map[y][x]!=='#',`${id}: toxic zone must not be inside wall at ${x},${y}`);
 }
+// All levels should be spatially expanded while retaining reachable starts, exits, notes, and items.
+assert.ok(LEVELS.level0.map[0].length>=96,'level0 width expanded by at least 1.5x');
+assert.ok(LEVELS.level0.map.length>=66,'level0 height expanded by at least 1.5x');
+assert.ok(LEVELS.level20.map[0].length>=110,'large levels also receive the expansion pass');
 assert.equal(LEVELS.level9.next,'level9b','Poolrooms floor 1 leads to floor 2');
 assert.equal(LEVELS.level9b.next,'level10','Poolrooms floor 2 leads onward');
 assert.equal(LEVELS.sanctuary.safe,true,'sanctuary must be safe');
