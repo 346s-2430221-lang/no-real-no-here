@@ -19,9 +19,12 @@ const Net={ws:null,on:false,leaving:false,me:null,code:null,token:null,host:null
    <label>서버 주소<input id="mu" type="text" value="${this.esc(mp.srv||this.defUrl())}"></label><label>방 코드<input id="mc" type="text" maxlength="6" placeholder="6자리"></label>
    <button id="mcr">방 만들기</button><button id="mjn">방 참가</button><div id="mmsg"></div><button id="mbk">뒤로</button>`);
   const go=first=>{mp.name=($('mn').value||'').trim().slice(0,12);mp.srv=($('mu').value||'').trim();Save.save();first.name=mp.name||'Player'+Math.floor(Math.random()*90+10);
-   $('mmsg').textContent='연결 중…';this.url=mp.srv;this.open(mp.srv,first,(ok,msg,m)=>{if(ok)Game.startMP(m);else{const e=$('mmsg');if(e)e.textContent=msg||'실패'}})};
+   $('mmsg').textContent='연결 중…';this.url=mp.srv;this.open(mp.srv,first,(ok,msg,m)=>{if(ok){if(m.started)Game.startMP(m);else this.showLobby(m)}else{const e=$('mmsg');if(e)e.textContent=msg||'실패'}})};
   $('mcr').onclick=()=>go({t:'create'});$('mjn').onclick=()=>{const c=($('mc').value||'').trim().toUpperCase();if(!/^[A-Z2-9]{6}$/.test(c)){$('mmsg').textContent='방 코드는 6자리입니다';return}go({t:'join',code:c})};
   $('mbk').onclick=()=>UI.close()},
+ showLobby(m){this.join(m);Game.state='lobby';Game.unlock();UI.menu(false);UI.hud(false);this.renderLobby(m);},
+ renderLobby(m){const ps=[...this.roster.values()].map(p=>'<div class="slot"><b>'+this.esc(p.name)+'</b> '+(p.id===this.host?'👑 방장':'')+'<p>'+(p.ready?'🟢 준비 완료':'🟡 준비 중')+(p.id===this.me?' · 나':'')+(p.online===false?' · 연결 끊김':'')+'</p></div>').join('');const host=this.me===this.host;UI.panel('<h2>NO REAL NO HERE</h2><h3>멀티플레이 대기실</h3><p>방 코드</p><h1 style="font-size:38px;letter-spacing:.2em">'+this.esc(this.code||'------')+'</h1><p>친구에게 방 코드를 알려주고 모두 준비하면 시작할 수 있어.</p><p>플레이어 '+this.roster.size+'/4</p>'+ps+'<button id="lReady">'+(this.roster.get(this.me)?.ready?'준비 취소':'준비 완료')+'</button>'+(host?'<button id="lStart">게임 시작</button>':'<p>방장이 시작할 때까지 기다려줘.</p>')+'<button id="lLeave">방 나가기</button><div id="lMsg"></div>');UI.$('lReady').onclick=()=>this.send({t:'ready',ready:!this.roster.get(this.me)?.ready});if(host&&UI.$('lStart'))UI.$('lStart').onclick=()=>{const e=UI.$('lMsg');if(e)e.textContent='게임 시작 요청 중…';this.send({t:'start'})};UI.$('lLeave').onclick=()=>{this.leave();Game.toMenu()};},
+ updateLobby(m){if(!m||!Array.isArray(m.players))return;this.roster.clear();m.players.forEach(p=>this.roster.set(p.id,p));this.host=m.host||this.host;this.renderLobby(m);},
  join(m,re){this.on=true;this.leaving=false;this.me=m.you;this.code=m.code;this.token=m.token;this.host=m.host;this.roster.clear();m.players.forEach(p=>this.roster.set(p.id,p));
   if(!this.grp){this.grp=new THREE.Group();Game.scene.add(this.grp)}this.clearAv();m.players.forEach(p=>{if(p.id!==this.me)this.av.set(p.id,this.mk(p))});this.hud();this.chatLine('시스템','방에 연결됨 · 코드 '+this.code);if(this.voiceOn)this.ensureVoicePeers()},
  mk(p){const g=new THREE.Group(),col=[0xcc5555,0x55aa77,0x5577cc,0xccaa44][(p.slot||0)%4];
@@ -37,10 +40,12 @@ const Net={ws:null,on:false,leaving:false,me:null,code:null,token:null,host:null
   if(this.on&&Game.state==='play'){this.tick+=dt;if(this.tick>=.1){this.tick=0;const q=[Player.x,Player.z,Player.yaw],l=this.last;if(!l||Math.abs(q[0]-l[0])+Math.abs(q[1]-l[1])+Math.abs(q[2]-l[2])>.01||this.idle++>10){this.idle=0;this.last=q;this.send({t:'pos',x:q[0],z:q[1],yaw:q[2]})}}}},idle:0,
  msg(m){const st=Levels.st;switch(m.t){
   case'joined':if(m.re)Game.resync(m);break;
-  case'pjoin':this.roster.set(m.p.id,m.p);if(m.p.id!==this.me&&!this.av.has(m.p.id))this.av.set(m.p.id,this.mk(m.p));this.hud();this.chatLine('시스템',m.p.name+' 입장');if(this.voiceOn)this.ensureVoicePeer(m.p.id);this.voiceStatus();UI.toast(m.p.name+' 입장',1800);break;
-  case'pleave':{const p=this.roster.get(m.id);this.roster.delete(m.id);const a=this.av.get(m.id);if(a){this.grp.remove(a.g);this.av.delete(m.id)}this.dropVoicePeer(m.id);this.hud();if(p)this.chatLine('시스템',p.name+' 퇴장');this.voiceStatus();if(p)UI.toast(p.name+' 퇴장',1800);break}
+  case'lobby':this.updateLobby(m);break;
+  case'gameStart':Game.startMP(m);break;
+  case'pjoin':this.roster.set(m.p.id,m.p);if(m.p.id!==this.me&&!this.av.has(m.p.id))this.av.set(m.p.id,this.mk(m.p));this.hud();if(Game.state==='lobby')this.updateLobby({players:[...this.roster.values()],host:this.host});this.chatLine('시스템',m.p.name+' 입장');if(this.voiceOn)this.ensureVoicePeer(m.p.id);this.voiceStatus();UI.toast(m.p.name+' 입장',1800);break;
+  case'pleave':{const p=this.roster.get(m.id);this.roster.delete(m.id);const a=this.av.get(m.id);if(a){this.grp.remove(a.g);this.av.delete(m.id)}this.dropVoicePeer(m.id);this.hud();if(Game.state==='lobby')this.updateLobby({players:[...this.roster.values()],host:this.host});if(p)this.chatLine('시스템',p.name+' 퇴장');this.voiceStatus();if(p)UI.toast(p.name+' 퇴장',1800);break}
   case'pstate':{const p=this.roster.get(m.id),a=this.av.get(m.id);if(p)p.online=m.online;if(a)a.g.visible=m.online;this.hud();break}
-  case'phost':this.host=m.id;this.hud();break;
+  case'phost':this.host=m.id;this.hud();if(Game.state==='lobby')this.updateLobby({players:[...this.roster.values()],host:this.host});break;
   case'pos':for(const q of m.p){const a=this.av.get(q.id),rp=this.roster.get(q.id);if(rp){rp.x=q.x;rp.z=q.z;rp.yaw=q.yaw}if(a){a.tx=q.x;a.tz=q.z;a.ty=q.yaw}}break;
   case'teleport':if(m.id===this.me){Player.spawn(m.x,m.z,Player.yaw);this.last=null;UI.toast('팀원에게 순간이동했다!',1800)}break;
   case'downed':{const p=this.roster.get(m.id);if(p)p.downed=true;if(m.id===this.me){Game.mpDowned=true;Game.stats.health=0;UI.toast('쓰러졌다! 팀원이 십자가로 부활시킬 수 있어.',4000)}else UI.toast((p?p.name:'팀원')+'이(가) 쓰러졌다!',2600);this.hud();break}
