@@ -1,4 +1,4 @@
-const CS=3,WH=2.6,Rules=NRNH.Rules,DCH=Rules.DCH;
+const CS=3,WH=3.9,Rules=NRNH.Rules,DCH=Rules.DCH;
 const Levels={defs:NRNH.LEVELS,scene:null,grp:null,lights:[],nl:5,panels:[],map:[],open:{},id:null,def:null,st:null,pI:null,dm:{},im:[],nm:[],coinMeshes:[],entity:null,_c:null,
  tex(w,draw,rx,ry){const c=document.createElement('canvas');c.width=c.height=w;draw(c.getContext('2d'),w);const t=new THREE.CanvasTexture(c);
   t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx||1,ry||1);t.anisotropy=Math.min(4,Game.R.capabilities.getMaxAnisotropy());return t},
