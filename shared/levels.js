@@ -209,6 +209,44 @@ function makeHub(id,name,theme,shop){const q=grid(30,22);q.c(2,2,27,19);q.c(1,9,
 const SAFE_HUB=makeHub('sanctuary','SAFE LEVEL — THE QUIET ROOM','white',false);
 const GLITCH_SHOP=makeHub('glitchshop','GL!TCH SHOP — ???','void',true);
 const ALL_LEVELS={level0:L0,level1:L1,level2:L2,level3:L3,level4:L4,level5:L5,level6:L6,void:LV,sanctuary:SAFE_HUB,glitchshop:GLITCH_SHOP,...EXTRA_LEVELS,level9b:pool2};
+// Expand every playable map by 1.5x in both directions while preserving cell connectivity.
+const LEVEL_EXPANSION=1.5;
+function expandLevel(L){
+ const old=L.map.map(r=>[...r]),oldH=old.length,oldW=old[0].length;
+ const newH=Math.ceil(oldH*LEVEL_EXPANSION),newW=Math.ceil(oldW*LEVEL_EXPANSION);
+ const expanded=Array.from({length:newH},()=>Array(newW).fill('#'));
+ for(let y=0;y<oldH;y++)for(let x=0;x<oldW;x++){
+  const x0=Math.floor(x*LEVEL_EXPANSION),x1=Math.ceil((x+1)*LEVEL_EXPANSION);
+  const y0=Math.floor(y*LEVEL_EXPANSION),y1=Math.ceil((y+1)*LEVEL_EXPANSION);
+  for(let yy=y0;yy<y1;yy++)for(let xx=x0;xx<x1;xx++)expanded[yy][xx]=old[y][x];
+ }
+ L.map=expanded.map(r=>r.join(''));
+ const point=v=>Math.floor((v+.5)*LEVEL_EXPANSION);
+ const startRange=v=>Math.floor(v*LEVEL_EXPANSION);
+ const endRange=v=>Math.ceil((v+1)*LEVEL_EXPANSION)-1;
+ const walk=(o,parentKey='')=>{
+  if(!o||typeof o!=='object')return;
+  if(Array.isArray(o)){o.forEach(v=>walk(v,parentKey));return}
+  for(const k of Object.keys(o)){
+   const v=o[k];
+   if(typeof v==='number'){
+    if(k==='cx'||k==='cy')o[k]=point(v);
+    else if(k==='cy0')o[k]=startRange(v);
+    else if(k==='cy1')o[k]=endRange(v);
+    else if(k==='x1'||k==='y1')o[k]=startRange(v);
+    else if(k==='x2'||k==='y2')o[k]=endRange(v);
+   }else if(v&&typeof v==='object')walk(v,k);
+  }
+ };
+ // Keep level rules aligned with the original logical zones after the map is enlarged.
+ const oldZone=L.zone,oldLit=L.lit;
+ walk(L);
+ if(oldZone)L.zone=(x,y)=>oldZone(Math.floor(x/LEVEL_EXPANSION),Math.floor(y/LEVEL_EXPANSION));
+ if(oldLit)L.lit=(x,y)=>oldLit(Math.floor(x/LEVEL_EXPANSION),Math.floor(y/LEVEL_EXPANSION));
+ return L;
+}
+for(const L of Object.values(ALL_LEVELS))expandLevel(L);
+
 // Keep interactable collectibles clear of generated furniture so they cannot spawn inside pillars/desks.
 for(const L of Object.values(ALL_LEVELS)){
  const mm=L.map.map(r=>r.split(''));
