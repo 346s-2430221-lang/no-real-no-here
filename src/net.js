@@ -23,7 +23,7 @@ const Net={ws:null,on:false,leaving:false,me:null,code:null,token:null,host:null
   $('mcr').onclick=()=>go({t:'create'});$('mjn').onclick=()=>{const c=($('mc').value||'').trim().toUpperCase();if(!/^[A-Z2-9]{6}$/.test(c)){$('mmsg').textContent='방 코드는 6자리입니다';return}go({t:'join',code:c})};
   $('mbk').onclick=()=>UI.close()},
  showLobby(m){this.join(m);Game.state='lobby';Game.unlock();UI.menu(false);UI.hud(false);this.renderLobby(m);},
- renderLobby(m){const ps=[...this.roster.values()].map(p=>'<div class="slot"><b>'+this.esc(p.name)+'</b> '+(p.id===this.host?'👑 방장':'')+'<p>'+(p.ready?'🟢 준비 완료':'🟡 준비 중')+(p.id===this.me?' · 나':'')+(p.online===false?' · 연결 끊김':'')+'</p></div>').join('');const host=this.me===this.host;UI.panel('<h2>NO REAL NO HERE</h2><h3>멀티플레이 대기실</h3><p>방 코드</p><h1 style="font-size:38px;letter-spacing:.2em">'+this.esc(this.code||'------')+'</h1><p>친구에게 방 코드를 알려주고 모두 준비하면 시작할 수 있어.</p><p>플레이어 '+this.roster.size+'/4</p>'+ps+'<button id="lReady">'+(this.roster.get(this.me)?.ready?'준비 취소':'준비 완료')+'</button>'+(host?'<button id="lStart">게임 시작</button>':'<p>방장이 시작할 때까지 기다려줘.</p>')+'<button id="lLeave">방 나가기</button><div id="lMsg"></div>');UI.$('lReady').onclick=()=>this.send({t:'ready',ready:!this.roster.get(this.me)?.ready});if(host&&UI.$('lStart'))UI.$('lStart').onclick=()=>{const e=UI.$('lMsg');if(e)e.textContent='게임 시작 요청 중…';this.send({t:'start'})};UI.$('lLeave').onclick=()=>{this.leave();Game.toMenu()};},
+ renderLobby(m){const ps=[...this.roster.values()].map(p=>'<div class="slot"><b>'+this.esc(p.name)+'</b> '+(p.id===this.host?'👑 방장':'')+'<p>'+(p.ready?'🟢 준비 완료':'🟡 준비 중')+(p.id===this.me?' · 나':'')+(p.online===false?' · 연결 끊김':'')+'</p></div>').join('');const host=this.me===this.host,desktop=!document.body.classList.contains('touch');UI.panel('<div class="lobby-head"><h2>NO REAL NO HERE</h2><h3>멀티플레이 대기실</h3></div><div class="lobby-code"><p>방 코드</p><h1>'+this.esc(this.code||'------')+'</h1><p>친구에게 방 코드를 알려주고 모두 준비하면 시작할 수 있어.</p></div><div class="lobby-roster"><p>플레이어 <b>'+this.roster.size+'/4</b></p>'+ps+'</div><div class="lobby-actions"><button id="lReady">'+(this.roster.get(this.me)?.ready?'준비 취소':'준비 완료')+'</button>'+(host?'<button id="lStart">게임 시작</button>':'<p class="lobby-wait">방장이 시작할 때까지 기다려줘.</p>')+(desktop?'<div class="lobby-mic"><div><b>🎙 마이크 설정</b><p id="lVoiceStatus">'+(this.voiceOn?'마이크 켜짐 · 권한 허용됨':'게임 시작 전 마이크를 확인할 수 있어.')+'</p></div><button id="lMic">'+(this.voiceOn?'마이크 끄기':'마이크 권한 요청 / 테스트')+'</button></div>':'')+'<button id="lLeave" class="lobby-leave">방 나가기</button><div id="lMsg"></div></div>');UI.$('lReady').onclick=()=>this.send({t:'ready',ready:!this.roster.get(this.me)?.ready});if(host&&UI.$('lStart'))UI.$('lStart').onclick=()=>{const e=UI.$('lMsg');if(e)e.textContent='게임 시작 요청 중…';this.send({t:'start'})};if(desktop&&UI.$('lMic'))UI.$('lMic').onclick=()=>this.toggleVoice();UI.$('lLeave').onclick=()=>{this.leave();Game.toMenu()};},
  updateLobby(m){if(!m||!Array.isArray(m.players))return;this.roster.clear();m.players.forEach(p=>this.roster.set(p.id,p));this.host=m.host||this.host;this.renderLobby(m);},
  join(m,re){this.on=true;this.leaving=false;this.me=m.you;this.code=m.code;this.token=m.token;this.host=m.host;this.roster.clear();m.players.forEach(p=>this.roster.set(p.id,p));
   if(!this.grp){this.grp=new THREE.Group();Game.scene.add(this.grp)}this.clearAv();m.players.forEach(p=>{if(p.id!==this.me)this.av.set(p.id,this.mk(p))});this.hud();this.chatLine('시스템','방에 연결됨 · 코드 '+this.code);if(this.voiceOn)this.ensureVoicePeers()},
@@ -88,11 +88,11 @@ chatLine(name,text,mine){const log=UI.$('chatLog');if(!log)return;const row=docu
   }catch(e){const msg=e.name==='NotAllowedError'?'사이트 권한에서 마이크를 허용하세요.':e.name==='NotFoundError'?'사용 가능한 마이크를 찾을 수 없습니다.':e.name==='NotReadableError'?'마이크가 다른 앱에서 사용 중일 수 있습니다.':e.message;UI.toast('마이크를 켤 수 없습니다: '+msg,4000)}
  },
  voiceStatus(){
-  const st=UI.$('voiceStatus');if(!st)return;
-  if(!this.voiceOn){st.textContent='음성 채팅 꺼짐';return}
-  const peers=[...this.roster.keys()].filter(id=>id!==this.me);
-  const connected=peers.filter(id=>this.voiceConnected.has(id)).length;
-  st.textContent=peers.length===0?'마이크 켜짐 · 다른 플레이어가 들어오면 연결됩니다':`마이크 켜짐 · 음성 연결 ${connected}/${peers.length}`;
+  const peers=[...this.roster.keys()].filter(id=>id!==this.me),connected=peers.filter(id=>this.voiceConnected.has(id)).length;
+  const msg=!this.voiceOn?'음성 채팅 꺼짐':peers.length===0?'마이크 켜짐 · 다른 플레이어가 들어오면 연결됩니다':`마이크 켜짐 · 음성 연결 ${connected}/${peers.length}`;
+  const st=UI.$('voiceStatus');if(st)st.textContent=msg;
+  const lobby=UI.$('lVoiceStatus');if(lobby)lobby.textContent=!this.voiceOn?'마이크 꺼짐':msg;
+  const btn=UI.$('lMic');if(btn)btn.textContent=this.voiceOn?'마이크 끄기':'마이크 권한 요청 / 테스트';
  },
  ensureVoicePeers(){for(const id of this.roster.keys())if(id!==this.me)this.ensureVoicePeer(id)},
  ensureVoicePeer(id){
