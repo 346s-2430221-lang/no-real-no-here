@@ -216,8 +216,8 @@ function expandLevel(L){
  const newH=Math.ceil(oldH*LEVEL_EXPANSION),newW=Math.ceil(oldW*LEVEL_EXPANSION);
  const expanded=Array.from({length:newH},()=>Array(newW).fill('#'));
  for(let y=0;y<oldH;y++)for(let x=0;x<oldW;x++){
-  const x0=Math.floor(x*LEVEL_EXPANSION),x1=Math.ceil((x+1)*LEVEL_EXPANSION);
-  const y0=Math.floor(y*LEVEL_EXPANSION),y1=Math.ceil((y+1)*LEVEL_EXPANSION);
+  const x0=Math.floor(x*LEVEL_EXPANSION),x1=Math.floor((x+1)*LEVEL_EXPANSION);
+  const y0=Math.floor(y*LEVEL_EXPANSION),y1=Math.floor((y+1)*LEVEL_EXPANSION);
   for(let yy=y0;yy<y1;yy++)for(let xx=x0;xx<x1;xx++)expanded[yy][xx]=old[y][x];
  }
  L.map=expanded.map(r=>r.join(''));
