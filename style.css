@@ -51,3 +51,33 @@ input[type=text]{user-select:text;-webkit-user-select:text;touch-action:manipula
 body:after{content:"";position:fixed;inset:0;z-index:2;pointer-events:none;background:radial-gradient(ellipse at center,transparent 42%,rgba(0,0,0,.18) 100%),linear-gradient(180deg,rgba(255,245,180,.025),transparent 25%,rgba(0,0,0,.08));mix-blend-mode:multiply}
 
 #survivalStatus{position:absolute;left:12px;top:46px;width:min(220px,44vw);font-size:12px;color:#eee8c8;text-shadow:0 1px 3px #000;display:grid;gap:5px;pointer-events:none}#survivalStatus>div{display:grid;grid-template-columns:66px 28px 1fr;align-items:center;gap:5px}#survivalStatus i{height:6px;background:#16150e;border:1px solid #857d53;border-radius:4px;overflow:hidden}#survivalStatus em{display:block;width:100%;height:100%;background:#d94c42}body.touch #survivalStatus{top:46px;width:min(180px,48vw)}
+
+
+/* 2026 lobby polish + responsive survival HUD */
+#panel{gap:12px;backdrop-filter:blur(8px)}
+#panel h2{font-size:clamp(22px,4vw,30px);letter-spacing:.04em}
+#panel h3{font-size:clamp(16px,3vw,21px);color:#d9d0a0}
+#panel button{border-radius:12px;min-width:min(260px,86vw);max-width:100%;box-shadow:0 5px 16px #0007;transition:background .15s,border-color .15s,transform .15s}
+#panel button:hover{background:rgba(72,58,18,.9);border-color:#c7b04e}
+#panel button:active{transform:translateY(1px)}
+.lobby-head,.lobby-code,.lobby-roster,.lobby-actions{width:min(560px,94vw);display:flex;flex-direction:column;align-items:center;gap:10px}
+.lobby-code{padding:16px 18px;border:1px solid #6a5a20;border-radius:18px;background:linear-gradient(145deg,rgba(36,30,9,.9),rgba(4,4,2,.85));box-shadow:inset 0 0 25px #a38a1a0d}
+.lobby-code h1{font-size:clamp(32px,8vw,48px);letter-spacing:.22em;overflow-wrap:anywhere}
+.lobby-roster{padding:12px;border:1px solid #4c421f;border-radius:16px;background:#0808029c}
+.lobby-roster .slot{width:100%;max-width:520px;border-radius:10px;margin:0;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.lobby-roster .slot p{font-size:12px;text-align:right}
+.lobby-actions{padding-bottom:8px}
+.lobby-actions #lReady{background:linear-gradient(135deg,#5a4b12,#28230c);border-color:#bca84b}
+.lobby-actions #lStart{background:linear-gradient(135deg,#254f35,#10271a);border-color:#4eaa71}
+.lobby-mic{width:min(520px,92vw);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid #3c4e39;border-radius:12px;background:rgba(14,27,15,.82);text-align:left}
+.lobby-mic p{font-size:12px;opacity:.8;margin-top:4px;overflow-wrap:anywhere}
+.lobby-mic button{min-width:0;width:auto;padding:10px 12px;font-size:13px;white-space:normal}
+.lobby-actions .lobby-leave{background:rgba(54,17,14,.7);border-color:#714038}
+#survivalStatus{padding:8px 9px;border:1px solid #81754b66;border-radius:10px;background:linear-gradient(145deg,rgba(0,0,0,.72),rgba(12,11,5,.44));backdrop-filter:blur(4px);width:min(225px,46vw);gap:7px}
+#survivalStatus>div{grid-template-columns:58px 27px minmax(30px,1fr);gap:4px;font-size:11px}
+#survivalStatus i{height:7px;border-radius:8px}
+body.touch #survivalStatus{top:52px;left:8px;width:min(185px,50vw);padding:6px;font-size:10px}
+body.touch #survivalStatus>div{grid-template-columns:48px 24px minmax(24px,1fr);gap:3px;font-size:10px}
+body.touch #count{top:8px;left:8px;font-size:11px;max-width:58vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.touch #net{top:8px;max-width:40vw;font-size:10px}
+@media(max-width:600px){.lobby-roster .slot{align-items:flex-start;flex-direction:column}.lobby-roster .slot p{text-align:left}.lobby-mic{align-items:stretch;flex-direction:column}.lobby-mic button{width:100%}#panel button{font-size:16px;padding:11px 16px}}
