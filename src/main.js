@@ -11,7 +11,7 @@ const Game={state:'menu',mode:'sp',mpState:{},cluesOpen:false,kpPid:null,zt:0,st
  returnLobbyFromEnding(){const n=Math.max(0,Math.floor(Save.data.runCoins||0));Save.data.wallet=(Save.data.wallet||0)+n;Save.data.runCoins=0;Save.data.level='level0';Save.data.pos=null;Save.data.started=false;Save.save();Game.state='menu';UI.close();UI.hud(false);UI.menu(true);Game.menuBtns();UI.toast('탐험 코인 '+n+'개를 꾸미기 코인으로 전환했습니다.',3000)},
  initSurvival(){if(!this.statusEl){const el=document.createElement('div');el.id='survivalStatus';el.innerHTML='<div>체력 <b id="stHealth">100</b><i><em id="stHealthBar"></em></i></div><div>스태미나 <b id="stStamina">100</b><i><em id="stStaminaBar"></em></i></div><div>정신력 <b id="stSanity">100</b><i><em id="stSanityBar"></em></i></div>';document.getElementById('hud').appendChild(el);this.statusEl=el;const cp=document.createElement('div');cp.id='teamCompass';cp.textContent='팀원 나침반: 상점에서 구매';cp.style.cssText='margin-top:5px;padding:4px 7px;border-radius:5px;background:rgba(0,0,0,.45);font-size:12px;color:#a8f2ff;display:none';el.appendChild(cp)}const d=Save.data;this.stats={health:d.health??100,stamina:d.stamina??100,sanity:d.sanity??100};this.updateSurvivalUI();const cp=document.getElementById('teamCompass');if(cp&&Save.data.teamItems&&Save.data.teamItems.compass)cp.style.display='block'},
  updateSurvivalUI(){if(!this.statusEl)return;for(const [key,id] of [['health','stHealth'],['stamina','stStamina'],['sanity','stSanity']]){const v=Math.round(this.stats[key]);const n=document.getElementById(id),b=document.getElementById(id+'Bar');if(n)n.textContent=v;if(b){b.style.width=v+'%';b.style.background=key==='health'?'#d94c42':key==='stamina'?'#e2c44c':'#a77be8'}}},
- survivalTick(dt){if(this.mode!=='sp'||this.state!=='play')return;const s=this.stats,d=Levels.def;let danger=false;
+ survivalTick(dt){if(this.state!=='play'||this.mpDowned)return;const s=this.stats,d=Levels.def;let danger=false;
   if(d&&d.toxicZones){const cx=Math.floor(Player.x/3),cy=Math.floor(Player.z/3);danger=d.toxicZones.some(z=>cx>=z.x1&&cx<=z.x2&&cy>=z.y1&&cy<=z.y2);}
   if(danger){s.health=Math.max(0,s.health-18*dt);s.sanity=Math.max(0,s.sanity-5*dt);if(Math.random()<dt*1.5)UI.toast('⚠ 독성 세균 오염수! 즉시 물 밖으로 나와!',1200)}
   if(d&&d.darkZone===this.zt)s.sanity=Math.max(0,s.sanity-(d.poolFloor?0.35:0.18)*dt);else s.sanity=Math.min(100,s.sanity+0.4*dt);
@@ -22,10 +22,10 @@ const Game={state:'menu',mode:'sp',mpState:{},cluesOpen:false,kpPid:null,zt:0,st
   if(s.sanity<25&&Math.random()<dt*.7){Game.cam.rotation.z+=(Math.random()-.5)*.018}
   // 스마일러는 각 클라이언트의 카메라에만 붙여 다른 플레이어에게 보이지 않는다.
   this.updateSmiler(dt);
-  if(s.sanity<=0&&this.smilerDeathLock<=0){this.smilerDeathLock=2.5;UI.toast('스마일러가 너를 덮쳤다. 정신이 끊겼다.',3000);Aud.burst(90,.9,.8);const p=this.startPos();Player.spawn(p.x,p.z,p.yaw);s.health=65;s.stamina=45;s.sanity=35;this.smilerShown=false;if(this.smiler)this.smiler.visible=false;}
+  if(s.sanity<=0&&this.smilerDeathLock<=0){this.smilerDeathLock=2.5;UI.toast('스마일러가 너를 덮쳤다. 정신이 끊겼다.',3000);Aud.burst(90,.9,.8);this.smilerShown=false;if(this.smiler)this.smiler.visible=false;if(this.mode==='mp'){this.mpDowned=true;Net.send({t:'downed'});s.health=0;this.updateSurvivalUI();return}else{const p=this.startPos();Player.spawn(p.x,p.z,p.yaw);s.health=65;s.stamina=45;s.sanity=35;}}
   if(this.smilerDeathLock>0)this.smilerDeathLock=Math.max(0,this.smilerDeathLock-dt);
-  if(s.health<=0){s.health=65;s.stamina=50;s.sanity=Math.max(20,s.sanity-15);const p=this.startPos();Player.spawn(p.x,p.z,p.yaw);UI.toast('체력이 바닥났다. 시작 구역에서 정신을 차렸다.',3000)}
-  if((this.hazardTick+=dt)>1){this.hazardTick=0;Save.data.health=s.health;Save.data.stamina=s.stamina;Save.data.sanity=s.sanity;Save.save();this.updateSurvivalUI()}},
+  if(s.health<=0){if(this.mode==='mp'){this.mpDowned=true;Net.send({t:'downed'});s.health=0;this.updateSurvivalUI();return}else{s.health=65;s.stamina=50;s.sanity=Math.max(20,s.sanity-15);const p=this.startPos();Player.spawn(p.x,p.z,p.yaw);UI.toast('체력이 바닥났다. 시작 구역에서 정신을 차렸다.',3000)}}
+  if((this.hazardTick+=dt)>.25){this.hazardTick=0;if(this.mode==='sp'){Save.data.health=s.health;Save.data.stamina=s.stamina;Save.data.sanity=s.sanity;Save.save()}this.updateSurvivalUI()}},
  updateSmiler(dt){
   if(!Game.cam||!Game.scene)return;
   if(!this.smiler){const g=new THREE.Group();const black=new THREE.MeshBasicMaterial({color:0x020202,transparent:true,opacity:.98,depthTest:false});const glow=new THREE.MeshBasicMaterial({color:0xfff4d6,emissive:0xffd9a0,depthTest:false});
