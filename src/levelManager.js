@@ -1,4 +1,4 @@
-const CS=3,WH=3.9,Rules=NRNH.Rules,DCH=Rules.DCH;
+const CS=3,WH=5.85,Rules=NRNH.Rules,DCH=Rules.DCH;
 const Levels={defs:NRNH.LEVELS,scene:null,grp:null,lights:[],nl:5,panels:[],map:[],open:{},id:null,def:null,st:null,pI:null,dm:{},im:[],nm:[],coinMeshes:[],entity:null,_c:null,
  tex(w,draw,rx,ry){const c=document.createElement('canvas');c.width=c.height=w;draw(c.getContext('2d'),w);const t=new THREE.CanvasTexture(c);
   t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx||1,ry||1);t.anisotropy=Math.min(4,Game.R.capabilities.getMaxAnisotropy());return t},
@@ -100,6 +100,13 @@ const Levels={defs:NRNH.LEVELS,scene:null,grp:null,lights:[],nl:5,panels:[],map:
   const trim=[],trimGeo=new THREE.BoxGeometry(CS,.13,.065),trimMat=new THREE.MeshStandardMaterial({color:d.theme==='water'?0x293a3b:d.theme==='red'?0x35211f:0x514a2b,roughness:.92});
   m.forEach((row,y)=>[...row].forEach((ch,x)=>{if(ch!=='#')return;for(const [dx,dy,rot] of [[0,-1,0],[0,1,Math.PI],[1,0,Math.PI/2],[-1,0,-Math.PI/2]])if(((m[y+dy]||'')[x+dx]||'#')!=='#')trim.push({x:(x+.5)*CS,z:(y+.5)*CS,rot})}));
   if(trim.length){const boards=new THREE.InstancedMesh(trimGeo,trimMat,trim.length),o2=new THREE.Object3D();trim.forEach((p,i)=>{o2.position.set(p.x,.075,p.z);o2.rotation.set(0,p.rot,0);o2.updateMatrix();boards.setMatrixAt(i,o2.matrix)});boards.instanceMatrix.needsUpdate=true;g.add(boards)}
+  // Ceiling edge rails and a small number of recessed service panels add depth without many draw calls.
+  const crown=[],crownGeo=new THREE.BoxGeometry(CS,.075,.075),crownMat=new THREE.MeshStandardMaterial({color:d.theme==='water'?0x344448:d.theme==='red'?0x392725:0x625d42,roughness:.88,metalness:.08});
+  m.forEach((row,y)=>[...row].forEach((ch,x)=>{if(ch!=='#')return;for(const [dx,dy,rot] of [[0,-1,0],[0,1,Math.PI],[1,0,Math.PI/2],[-1,0,-Math.PI/2]])if(((m[y+dy]||'')[x+dx]||'#')!=='#')crown.push({x:(x+.5)*CS,z:(y+.5)*CS,rot})}));
+  if(crown.length){const rails=new THREE.InstancedMesh(crownGeo,crownMat,crown.length),o3=new THREE.Object3D();crown.forEach((p,i)=>{o3.position.set(p.x,WH-.065,p.z);o3.rotation.set(0,p.rot,0);o3.updateMatrix();rails.setMatrixAt(i,o3.matrix)});rails.instanceMatrix.needsUpdate=true;g.add(rails)}
+  const ventCells=floor.filter((p,i)=>i%37===11&&d.theme!=='forest');
+  if(ventCells.length){const ventGeo=new THREE.BoxGeometry(1.05,.035,.68),ventMat=new THREE.MeshStandardMaterial({color:0x34352d,roughness:.82,metalness:.18}),slatGeo=new THREE.BoxGeometry(.88,.018,.035),slatMat=new THREE.MeshStandardMaterial({color:0x777568,roughness:.72,metalness:.25}),vents=new THREE.InstancedMesh(ventGeo,ventMat,ventCells.length),slats=new THREE.InstancedMesh(slatGeo,slatMat,ventCells.length*5),ov=new THREE.Object3D();ventCells.forEach((p,i)=>{ov.position.set(p[0],WH-.035,p[1]);ov.updateMatrix();vents.setMatrixAt(i,ov.matrix);for(let k=0;k<5;k++){ov.position.set(p[0],WH-.012,p[1]-.27+k*.135);ov.updateMatrix();slats.setMatrixAt(i*5+k,ov.matrix)}});vents.instanceMatrix.needsUpdate=true;slats.instanceMatrix.needsUpdate=true;g.add(vents,slats)}
+
   // 형광등: 인스턴스 메쉬 하나(+ 어두운 테두리 하나)
   const pts=[];floor.forEach(p=>{const x=Math.floor(p[0]/CS),y=Math.floor(p[1]/CS);if(d.lit(x,y)&&(x*5+y*3)%8===0)pts.push(p)});
   const pg=new THREE.PlaneGeometry(1.6,.5);pg.rotateX(Math.PI/2);const fg=new THREE.PlaneGeometry(1.85,.75);fg.rotateX(Math.PI/2);
