@@ -12,7 +12,7 @@ const Rules={CS,DCH,
  submit(L,st,pid,ans){const p=L.puzzles.find(q=>q.id===pid);if(!p||p.type!=='code'||typeof ans!=='string'||ans.length!==p.len||!/^\d+$/.test(ans))return'invalid';
   if(st.solved[pid])return'already';if(ans!==Rules.answers(L,st.seed)[pid])return'wrong';st.solved[pid]=true;return'ok'},
  useBreaker(L,st,pid){const p=L.puzzles.find(q=>q.id===pid);if(!p||p.type!=='items')return'invalid';if(st.solved[pid])return'already';if(st.items.length<p.need)return'need';st.solved[pid]=true;return'ok'},
- doorOpen(L,st,did,W){const d=L.doors&&L.doors[did];return L.puzzles.some(p=>p.door===did&&!!st.solved[p.id])||!!(d&&d.env&&W&&W.env&&W.env[d.env])},
+ doorOpen(L,st,did,W){const d=L.doors&&L.doors[did],required=L.puzzles.filter(p=>p.door===did);return(required.length>0&&required.every(p=>!!st.solved[p.id]))||(!required.length&&!!(d&&d.env&&W&&W.env&&W.env[d.env]))},
  solidAt(L,st,x,z,W){const cx=Math.floor(x/CS),cz=Math.floor(z/CS),c=(L.map[cz]||'')[cx]||'#';if(c==='#')return true;if(DCH[c])return!Rules.doorOpen(L,st,DCH[c],W);
   const dx=Math.abs(x-(cx+.5)*CS),dz=Math.abs(z-(cz+.5)*CS);if(c==='P')return dx<.6&&dz<.6;if(c==='D')return dx<.95&&dz<.55;return false},
  cellPos(c){return[(c.cx+.5)*CS,(c.cy+.5)*CS]},
@@ -209,8 +209,8 @@ function makeHub(id,name,theme,shop){const q=grid(30,22);q.c(2,2,27,19);q.c(1,9,
 const SAFE_HUB=makeHub('sanctuary','SAFE LEVEL — THE QUIET ROOM','white',false);
 const GLITCH_SHOP=makeHub('glitchshop','GL!TCH SHOP — ???','void',true);
 const ALL_LEVELS={level0:L0,level1:L1,level2:L2,level3:L3,level4:L4,level5:L5,level6:L6,void:LV,sanctuary:SAFE_HUB,glitchshop:GLITCH_SHOP,...EXTRA_LEVELS,level9b:pool2};
-// Expand every playable map by 1.5x in both directions while preserving cell connectivity.
-const LEVEL_EXPANSION=1.5;
+// A second 4/3 expansion combines with the original 1.5x pass for 2x original width and height.
+const LEVEL_EXPANSION=4/3;
 function expandLevel(L){
  const old=L.map.map(r=>[...r]),oldH=old.length,oldW=old[0].length;
  const newH=Math.ceil(oldH*LEVEL_EXPANSION),newW=Math.ceil(oldW*LEVEL_EXPANSION);
@@ -246,6 +246,51 @@ function expandLevel(L){
  return L;
 }
 for(const L of Object.values(ALL_LEVELS))expandLevel(L);
+
+// Large exploration levels now require both the collected components and a five-digit cipher.
+// Each clue is embedded in an existing note, so the puzzle uses exploration rather than a random guess.
+function addCipherPuzzle(L){
+ const map=L.map.map(r=>r.split('')),H=map.length,W=map[0].length;
+ const walk=(x,y)=>x>=0&&y>=0&&x<W&&y<H&&!['#','P','D'].includes(map[y][x]);
+ const seen=new Set(),q=[[L.start.cx,L.start.cy]];
+ if(walk(L.start.cx,L.start.cy))seen.add(L.start.cy*W+L.start.cx);
+ for(let i=0;i<q.length;i++){const[x,y]=q[i];for(const[nx,ny]of[[x+1,y],[x-1,y],[x,y+1],[x,y-1]]){const k=ny*W+nx;if(walk(nx,ny)&&!seen.has(k)){seen.add(k);q.push([nx,ny])}}}
+ const occupied=[L.start,L.exit,...(L.items||[]),...(L.notes||[]),...(L.puzzles||[]).map(p=>p.at).filter(Boolean)].filter(Boolean);
+ const dirs=[['N',0,-1],['S',0,1],['E',1,0],['W',-1,0]];
+ let best=null,bestScore=-1;
+ for(let y=2;y<H-2;y++)for(let x=8;x<W-8;x++){
+  if(map[y][x]!=='.'||!seen.has(y*W+x))continue;
+  for(const[wall,dx,dy]of dirs){
+   if(map[y+dy]?.[x+dx]!=='#')continue;
+   const minDist=Math.min(...occupied.map(o=>Math.abs(x-(o.cx??o.cx0??o.cx??0))+Math.abs(y-(o.cy??o.cy0??0))));
+   if(minDist<5)continue;
+   const score=minDist-Math.abs(x-W*.56)*.08-Math.abs(y-H*.5)*.03;
+   if(score>bestScore){bestScore=score;best={cx:x,cy:y,wall}}
+  }
+ }
+ if(!best)throw new Error('No reachable cipher panel location for '+L.id);
+ const pid=L.id+'_cipher';
+ L.puzzles.push({id:pid,type:'code',len:5,door:'exit',at:best});
+ const originals=L.notes.map(n=>n.text);
+ L.notes.forEach((n,i)=>{
+  if(i>3)return;
+  n.text=A=>{
+   const base=typeof originals[i]==='function'?originals[i](A):String(originals[i]||'');
+   const code=String(A[pid]||'00000').padStart(5,'0'),d=code.split('').map(Number);
+   const clues=[
+    '암호 단서 A: 첫째 숫자는 '+d[0]+'. 첫째와 둘째 숫자의 합은 '+(d[0]+d[1])+'.',
+    '암호 단서 B: 셋째 숫자는 '+d[2]+'. 셋째와 넷째 숫자의 합은 '+(d[2]+d[3])+'.',
+    '암호 단서 C: 다섯째 숫자는 '+d[4]+'. 앞의 네 숫자만 입력하면 열리지 않는다.',
+    '검증 기록: 다섯 자리 숫자의 합은 '+d.reduce((a,b)=>a+b,0)+'. 계산한 암호가 맞는지 확인하라.'
+   ][i];
+   return base+'<br><br><b>'+clues+'</b>';
+  };
+ });
+ const d=L.doors.exit;d.lockedMsg=(d.lockedMsg||'출구가 잠겨 있다.')+' 분전함의 부품과 5자리 암호를 모두 해결해야 한다.';
+}
+for(const L of Object.values(ALL_LEVELS)){
+ if(/^level(?:[7-9]|1[0-9]|2[0-9]|30)$/.test(L.id)||L.id==='level9b')addCipherPuzzle(L);
+}
 
 // Keep interactable collectibles clear of generated furniture so they cannot spawn inside pillars/desks.
 for(const L of Object.values(ALL_LEVELS)){
