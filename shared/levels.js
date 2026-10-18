@@ -209,8 +209,8 @@ function makeHub(id,name,theme,shop){const q=grid(30,22);q.c(2,2,27,19);q.c(1,9,
 const SAFE_HUB=makeHub('sanctuary','SAFE LEVEL — THE QUIET ROOM','white',false);
 const GLITCH_SHOP=makeHub('glitchshop','GL!TCH SHOP — ???','void',true);
 const ALL_LEVELS={level0:L0,level1:L1,level2:L2,level3:L3,level4:L4,level5:L5,level6:L6,void:LV,sanctuary:SAFE_HUB,glitchshop:GLITCH_SHOP,...EXTRA_LEVELS,level9b:pool2};
-// A second 4/3 expansion combines with the original 1.5x pass for 2x original width and height.
-const LEVEL_EXPANSION=4/3;
+// Expand every original map to 2x width and height (4x the traversable area) in a single consistent pass.
+const LEVEL_EXPANSION=2.0;
 function expandLevel(L){
  const old=L.map.map(r=>[...r]),oldH=old.length,oldW=old[0].length;
  const newH=Math.ceil(oldH*LEVEL_EXPANSION),newW=Math.ceil(oldW*LEVEL_EXPANSION);
