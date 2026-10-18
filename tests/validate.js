@@ -31,11 +31,23 @@ for (const [id, L] of Object.entries(LEVELS)) {
 // All levels should be spatially expanded while retaining reachable starts, exits, notes, and items.
 assert.ok(LEVELS.level0.map[0].length>=96,'level0 width expanded by at least 1.5x');
 assert.ok(LEVELS.level0.map.length>=66,'level0 height expanded by at least 1.5x');
-assert.ok(LEVELS.level20.map[0].length>=110,'large levels also receive the expansion pass');
+assert.ok(LEVELS.level20.map[0].length>=140,'large levels receive the second map expansion pass');
+assert.ok(LEVELS.level0.map[0].length>=120,'starting level receives the second map expansion pass');
 assert.equal(LEVELS.level9.next,'level9b','Poolrooms floor 1 leads to floor 2');
 assert.equal(LEVELS.level9b.next,'level10','Poolrooms floor 2 leads onward');
 assert.equal(LEVELS.sanctuary.safe,true,'sanctuary must be safe');
 assert.equal(LEVELS.glitchshop.safe,true,'glitch shop must not spawn entities');
+for(let n=7;n<=30;n++){
+ const L=LEVELS['level'+n],p=L.puzzles.find(q=>q.id==='level'+n+'_cipher');
+ assert.ok(p&&p.type==='code'&&p.len===5&&p.door==='exit',`level${n}: five-digit cipher gates the exit`);
+ assert.ok(walk(p.at.cx,p.at.cy)&&seen.has(p.at.cy*W+p.at.cx) || (()=>{
+  const ww=L.map[0].length,hh=L.map.length,ok=(x,y)=>x>=0&&y>=0&&x<ww&&y<hh&&!['#','P','D'].includes(L.map[y][x]);
+  const qq=[[L.start.cx,L.start.cy]],ss=new Set([L.start.cy*ww+L.start.cx]);
+  for(let i=0;i<qq.length;i++){const[x,y]=qq[i];for(const[nx,ny]of[[x+1,y],[x-1,y],[x,y+1],[x,y-1]]){const k=ny*ww+nx;if(ok(nx,ny)&&!ss.has(k)){ss.add(k);qq.push([nx,ny])}}}
+  return ok(p.at.cx,p.at.cy)&&ss.has(p.at.cy*ww+p.at.cx);
+ })(),`level${n}: cipher panel is reachable`);
+}
+assert.ok(LEVELS.level9b.puzzles.some(p=>p.id==='level9b_cipher'),'Poolrooms floor 2 has a cipher puzzle');
 const aiSource=fs.readFileSync(path.join(__dirname,'../src/levelManager.js'),'utf8');
 for(const kind of ['stalker','blink','water','patrol','sound','shy','ambush'])assert.ok(aiSource.includes(`kind:'${kind}'`),`AI profile ${kind} exists`);
 assert.ok(aiSource.includes("p.crouch?.38:p.run?1.65:1"),'crouch/run noise affects AI hearing');
