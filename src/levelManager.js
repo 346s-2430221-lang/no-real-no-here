@@ -55,7 +55,8 @@ const Levels={defs:NRNH.LEVELS,scene:null,grp:null,lights:[],nl:5,panels:[],map:
   const ft=this.tex(512,(c,w)=>{c.fillStyle='#665a2c';c.fillRect(0,0,w,w);sp(c,w,'rgba(25,18,0,.38)',9000,2);sp(c,w,'rgba(150,135,70,.2)',5600,2);blot(c,w,'rgba(30,20,0,.34)',20,60);blot(c,w,'rgba(120,110,50,.18)',16,70);blot(c,w,'rgba(17,13,6,.22)',9,42);for(let i=0;i<80;i++){c.strokeStyle='rgba(20,15,0,'+(.025+Math.random()*.07)+')';c.lineWidth=.5+Math.random()*1.3;c.beginPath();let x=Math.random()*w,y=Math.random()*w;c.moveTo(x,y);c.lineTo(x+(Math.random()-.5)*32,y+Math.random()*48);c.stroke()}for(let i=0;i<7;i++){const x=Math.random()*w,y=Math.random()*w;c.strokeStyle='rgba(28,22,8,.2)';c.lineWidth=1;c.beginPath();c.moveTo(x,y);c.lineTo(x+Math.random()*28,y+4+Math.random()*8);c.lineTo(x+Math.random()*35,y+12+Math.random()*12);c.stroke()}},W*CS/6,D*CS/6);
   const ct=this.tex(256,(c,w)=>{c.fillStyle='#c4c096';c.fillRect(0,0,w,w);for(let y=0;y<w;y+=64)for(let x=0;x<w;x+=64){c.fillStyle='rgba(245,241,206,.16)';c.fillRect(x+3,y+3,58,58);c.strokeStyle='rgba(64,58,37,.52)';c.lineWidth=2;c.strokeRect(x+1,y+1,62,62);c.strokeStyle='rgba(255,255,224,.28)';c.lineWidth=1;c.beginPath();c.moveTo(x+4,y+4);c.lineTo(x+60,y+4);c.moveTo(x+4,y+4);c.lineTo(x+4,y+60);c.stroke()}blot(c,w,'rgba(90,70,20,.2)',9,40);blot(c,w,'rgba(40,35,20,.1)',4,25)},W*.75,D*.75);
   const st0=this.tex(128,c=>{const gr=c.createRadialGradient(64,64,0,64,64,60);gr.addColorStop(0,'rgba(25,15,0,.5)');gr.addColorStop(1,'rgba(25,15,0,0)');c.fillStyle=gr;c.fillRect(0,0,128,128)});
-  const M=t=>new THREE.MeshLambertMaterial({map:t,vertexColors:false});
+  // 현실적인 거친 표면: 기존 캔버스 텍스처를 색상과 미세 범프에 함께 사용한다.
+  const M=t=>new THREE.MeshStandardMaterial({map:t,bumpMap:t,bumpScale:.026,roughness:.96,metalness:0,vertexColors:false});
   // 바닥/천장: 정점 색으로 넓은 범위의 명암 변화를 주어 텍스처 반복이 덜 보이게 한다
   const plane=(tex,rot,y)=>{const geo=new THREE.PlaneGeometry(W*CS,D*CS,Math.ceil(W/2),Math.ceil(D/2)),n=geo.attributes.position.count,a=new Float32Array(n*3);
    for(let i=0;i<n;i++){const v=.8+Math.random()*.2;a[i*3]=v;a[i*3+1]=v;a[i*3+2]=v*.96}geo.setAttribute('color',new THREE.BufferAttribute(a,3));
@@ -109,9 +110,14 @@ const Levels={defs:NRNH.LEVELS,scene:null,grp:null,lights:[],nl:5,panels:[],map:
 
   // 형광등: 인스턴스 메쉬 하나(+ 어두운 테두리 하나)
   const pts=[];floor.forEach(p=>{const x=Math.floor(p[0]/CS),y=Math.floor(p[1]/CS);if(d.lit(x,y)&&(x*5+y*3)%8===0)pts.push(p)});
-  const pg=new THREE.PlaneGeometry(1.6,.5);pg.rotateX(Math.PI/2);const fg=new THREE.PlaneGeometry(1.85,.75);fg.rotateX(Math.PI/2);
-  const frame=inst(fg,new THREE.MeshBasicMaterial({color:0x2c2a18}),pts,WH-.012,false);
-  if(pts.length){this.pI=inst(pg,new THREE.MeshBasicMaterial(),pts,WH-.02,false);pts.forEach((p,i)=>{this.pI.setColorAt(i,col.setRGB(.93,.96,.68));L.panels.push({z:d.zone(Math.floor(p[0]/CS),Math.floor(p[1]/CS)),x:p[0],pz:p[1],i,bad:Math.random()<.18,r:5+Math.random()*8,ph:Math.random()*9,f:1,d:0,u:false,hold:0})});this.pI.instanceColor.needsUpdate=true}
+  // 얇은 금속 하우징 + 유백색 확산 커버: 실제 형광등의 테두리와 깊이감을 저비용 인스턴싱으로 표현한다.
+  const housingGeo=new THREE.BoxGeometry(1.92,.075,.82),housingMat=new THREE.MeshStandardMaterial({color:0x777568,roughness:.72,metalness:.28});
+  const housing=inst(housingGeo,housingMat,pts,WH-.075,false);
+  const rimGeo=new THREE.BoxGeometry(1.72,.022,.62),rimMat=new THREE.MeshStandardMaterial({color:0x37372f,roughness:.82,metalness:.12});
+  inst(rimGeo,rimMat,pts,WH-.028,false);
+  const pg=new THREE.PlaneGeometry(1.56,.46);pg.rotateX(Math.PI/2);const fg=new THREE.PlaneGeometry(1.68,.58);fg.rotateX(Math.PI/2);
+  const frame=inst(fg,new THREE.MeshStandardMaterial({color:0xbab9a5,roughness:.55,metalness:.04}),pts,WH-.014,false);
+  if(pts.length){const lensMat=new THREE.MeshStandardMaterial({color:0xf4f2d9,emissive:0xd6d2a1,emissiveIntensity:.48,roughness:.28,metalness:0});this.pI=inst(pg,lensMat,pts,WH-.006,false);pts.forEach((p,i)=>{this.pI.setColorAt(i,col.setRGB(.96,.97,.86));L.panels.push({z:d.zone(Math.floor(p[0]/CS),Math.floor(p[1]/CS)),x:p[0],pz:p[1],i,bad:Math.random()<.18,r:5+Math.random()*8,ph:Math.random()*9,f:1,d:0,u:false,hold:0})});this.pI.instanceColor.needsUpdate=true}
   // 문
   const doorM=new THREE.MeshLambertMaterial({color:0x2f4a35});
   for(const id of['1','2','3']){const did=DCH[id];if(!dc[id].length)continue;this.dm[did]=dc[id].map(p=>{const b=new THREE.Mesh(new THREE.BoxGeometry(CS-.04,WH-.02,CS-.04),doorM);b.position.set(p[0],WH/2,p[1]);g.add(b);return b});
@@ -240,7 +246,7 @@ const Levels={defs:NRNH.LEVELS,scene:null,grp:null,lights:[],nl:5,panels:[],map:
    p.d=(p.x-px)**2+(p.pz-pz)**2;p.u=false}
   if(ch&&this.pI)this.pI.instanceColor.needsUpdate=true;
   let near=null;for(let i=0;i<this.lights.length;i++){const l=this.lights[i];let b=null;if(i<this.nl)for(const p of P)if(!p.u&&(!b||p.d<b.d))b=p;
-   if(b){b.u=true;if(!i)near=b;l.position.set(b.x,WH-.3,b.pz);l.intensity=1.5*b.f*dm}else l.intensity=0}
+   if(b){b.u=true;if(!i)near=b;l.position.set(b.x,WH-.3,b.pz);l.intensity=1.18*b.f*dm}else l.intensity=0}
   Aud.buzz(near&&near.d<20?near.f:.2);
   const E=this.entity;if(E&&Game.state==='play'&&Game.mode==='sp'){
     const p=Player,ex=E.g.position.x,ez=E.g.position.z,dx=px-ex,dz=pz-ez,dist=Math.hypot(dx,dz),P=E.profile;
