@@ -1,7 +1,7 @@
 const CS=3,WH=5.85,Rules=NRNH.Rules,DCH=Rules.DCH;
 const Levels={defs:NRNH.LEVELS,scene:null,grp:null,lights:[],nl:5,panels:[],map:[],open:{},id:null,def:null,st:null,pI:null,dm:{},im:[],nm:[],coinMeshes:[],entity:null,_c:null,
  tex(w,draw,rx,ry){const c=document.createElement('canvas');c.width=c.height=w;draw(c.getContext('2d'),w);const t=new THREE.CanvasTexture(c);
-  t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx||1,ry||1);t.anisotropy=Math.min(4,Game.R.capabilities.getMaxAnisotropy());return t},
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx||1,ry||1);t.anisotropy=Math.min(8,Game.R.capabilities.getMaxAnisotropy());return t},
  unload(){if(!this.grp)return;this.scene.remove(this.grp);this.grp.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)[].concat(o.material).forEach(m=>{if(m.map)m.map.dispose();m.dispose()})});
   this.grp=null;this.panels=[];this.lights=[];this.pI=null;this.dm={};this.nm=[];this.im=[];this.coinMeshes=[];this.entity=null;this.open={}},
  load(id,scene){const d=this.defs[id];if(!d)throw new Error('level '+id);this.unload();this.scene=scene;this.id=id;this.def=d;this.st=Game.stateFor(id);const st=this.st;
@@ -44,7 +44,7 @@ const Levels={defs:NRNH.LEVELS,scene:null,grp:null,lights:[],nl:5,panels:[],map:
  build(d,g){const m=this.map,W=m[0].length,D=m.length,st=this.st,L=this;this._c=new THREE.Color();
   const sp=(c,w,col,n,s)=>{c.fillStyle=col;for(let i=0;i<n;i++)c.fillRect(Math.random()*w,Math.random()*w,1+Math.random()*s,1+Math.random()*s)};
   const blot=(c,w,col,n,r)=>{for(let i=0;i<n;i++){const x=Math.random()*w,y=Math.random()*w,q=r*(.4+Math.random()),gr=c.createRadialGradient(x,y,0,x,y,q);gr.addColorStop(0,col);gr.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=gr;c.fillRect(x-q,y-q,2*q,2*q)}};
-  const wallT=()=>this.tex(256,(c,w)=>{c.fillStyle='#a39a45';c.fillRect(0,0,w,w);
+  const wallT=()=>this.tex(512,(c,w)=>{c.fillStyle='#a39a45';c.fillRect(0,0,w,w);
    for(let x=0;x<w;x+=64){c.fillStyle='rgba(58,48,12,.22)';c.fillRect(x,0,2,w);c.fillStyle='rgba(235,219,130,.12)';c.fillRect(x+2,0,2,w)}
    for(let y=6;y<w;y+=48){c.fillStyle='rgba(70,57,18,.10)';c.fillRect(0,y,w,2);for(let x=8;x<w;x+=64)c.fillRect(x,y,2,2)}
    for(let i=0;i<14;i++){const x=Math.random()*w,y=Math.random()*w,h=10+Math.random()*42;c.strokeStyle='rgba(50,39,9,.2)';c.lineWidth=1+Math.random()*2;c.beginPath();c.moveTo(x,y);c.lineTo(x+(Math.random()-.5)*7,y+h);c.stroke();c.fillStyle='rgba(39,30,8,.12)';c.fillRect(x-2,y+h*.45,4,Math.max(3,h*.18))}
@@ -53,10 +53,10 @@ const Levels={defs:NRNH.LEVELS,scene:null,grp:null,lights:[],nl:5,panels:[],map:
    let gr=c.createLinearGradient(0,0,0,w);[[0,.25],[.12,0],[.8,0],[.9,.4],[1,.7]].forEach(a=>gr.addColorStop(a[0],'rgba(20,12,0,'+a[1]+')'));c.fillStyle=gr;c.fillRect(0,0,w,w);
    gr=c.createLinearGradient(0,0,w,0);[[0,.2],[.08,0],[.92,0],[1,.2]].forEach(a=>gr.addColorStop(a[0],'rgba(0,0,0,'+a[1]+')'));c.fillStyle=gr;c.fillRect(0,0,w,w)});
   const ft=this.tex(512,(c,w)=>{c.fillStyle='#665a2c';c.fillRect(0,0,w,w);sp(c,w,'rgba(25,18,0,.38)',9000,2);sp(c,w,'rgba(150,135,70,.2)',5600,2);blot(c,w,'rgba(30,20,0,.34)',20,60);blot(c,w,'rgba(120,110,50,.18)',16,70);blot(c,w,'rgba(17,13,6,.22)',9,42);for(let i=0;i<80;i++){c.strokeStyle='rgba(20,15,0,'+(.025+Math.random()*.07)+')';c.lineWidth=.5+Math.random()*1.3;c.beginPath();let x=Math.random()*w,y=Math.random()*w;c.moveTo(x,y);c.lineTo(x+(Math.random()-.5)*32,y+Math.random()*48);c.stroke()}for(let i=0;i<7;i++){const x=Math.random()*w,y=Math.random()*w;c.strokeStyle='rgba(28,22,8,.2)';c.lineWidth=1;c.beginPath();c.moveTo(x,y);c.lineTo(x+Math.random()*28,y+4+Math.random()*8);c.lineTo(x+Math.random()*35,y+12+Math.random()*12);c.stroke()}},W*CS/6,D*CS/6);
-  const ct=this.tex(256,(c,w)=>{c.fillStyle='#c4c096';c.fillRect(0,0,w,w);for(let y=0;y<w;y+=64)for(let x=0;x<w;x+=64){c.fillStyle='rgba(245,241,206,.16)';c.fillRect(x+3,y+3,58,58);c.strokeStyle='rgba(64,58,37,.52)';c.lineWidth=2;c.strokeRect(x+1,y+1,62,62);c.strokeStyle='rgba(255,255,224,.28)';c.lineWidth=1;c.beginPath();c.moveTo(x+4,y+4);c.lineTo(x+60,y+4);c.moveTo(x+4,y+4);c.lineTo(x+4,y+60);c.stroke()}blot(c,w,'rgba(90,70,20,.2)',9,40);blot(c,w,'rgba(40,35,20,.1)',4,25)},W*.75,D*.75);
+  const ct=this.tex(512,(c,w)=>{c.fillStyle='#c4c096';c.fillRect(0,0,w,w);for(let y=0;y<w;y+=64)for(let x=0;x<w;x+=64){c.fillStyle='rgba(245,241,206,.16)';c.fillRect(x+3,y+3,58,58);c.strokeStyle='rgba(64,58,37,.52)';c.lineWidth=2;c.strokeRect(x+1,y+1,62,62);c.strokeStyle='rgba(255,255,224,.28)';c.lineWidth=1;c.beginPath();c.moveTo(x+4,y+4);c.lineTo(x+60,y+4);c.moveTo(x+4,y+4);c.lineTo(x+4,y+60);c.stroke()}blot(c,w,'rgba(90,70,20,.2)',9,40);blot(c,w,'rgba(40,35,20,.1)',4,25)},W*.75,D*.75);
   const st0=this.tex(128,c=>{const gr=c.createRadialGradient(64,64,0,64,64,60);gr.addColorStop(0,'rgba(25,15,0,.5)');gr.addColorStop(1,'rgba(25,15,0,0)');c.fillStyle=gr;c.fillRect(0,0,128,128)});
   // 현실적인 거친 표면: 기존 캔버스 텍스처를 색상과 미세 범프에 함께 사용한다.
-  const M=t=>new THREE.MeshStandardMaterial({map:t,bumpMap:t,bumpScale:.026,roughness:.96,metalness:0,vertexColors:false});
+  const M=t=>new THREE.MeshStandardMaterial({map:t,bumpMap:t,bumpScale:.038,roughness:.97,metalness:0,vertexColors:false});
   // 바닥/천장: 정점 색으로 넓은 범위의 명암 변화를 주어 텍스처 반복이 덜 보이게 한다
   const plane=(tex,rot,y)=>{const geo=new THREE.PlaneGeometry(W*CS,D*CS,Math.ceil(W/2),Math.ceil(D/2)),n=geo.attributes.position.count,a=new Float32Array(n*3);
    for(let i=0;i<n;i++){const v=.8+Math.random()*.2;a[i*3]=v;a[i*3+1]=v;a[i*3+2]=v*.96}geo.setAttribute('color',new THREE.BufferAttribute(a,3));
