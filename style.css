@@ -99,10 +99,10 @@ body.touch #bVoice{top:116px;right:max(10px,env(safe-area-inset-right));min-widt
 body.touch #stick{left:max(18px,env(safe-area-inset-left));bottom:max(24px,env(safe-area-inset-bottom));width:132px;height:132px;border:1px solid #d6c77988;background:radial-gradient(circle,rgba(185,167,93,.12),rgba(0,0,0,.48));box-shadow:inset 0 0 24px #0008,0 4px 18px #0008}
 body.touch #knob{width:54px;height:54px;border:1px solid #e4d99b;background:radial-gradient(circle at 35% 30%,#aaa078d9,#302b18e8);box-shadow:0 3px 12px #0008}
 body.touch #bRun{right:max(18px,env(safe-area-inset-right));bottom:max(174px,calc(env(safe-area-inset-bottom) + 174px));min-width:72px}
-body.touch #bJump{right:max(18px,env(safe-area-inset-right));bottom:max(104px,calc(env(safe-area-inset-bottom) + 104px));min-width:72px;min-height:60px;border-radius:18px;background:linear-gradient(145deg,#645725ee,#211e12ee);border-color:#e0cc6c}
+body.touch #bJump{right:max(18px,env(safe-area-inset-right)) !important;bottom:max(104px,calc(env(safe-area-inset-bottom) + 104px)) !important;min-width:72px;min-height:60px;border-radius:18px;background:linear-gradient(145deg,#645725ee,#211e12ee);border-color:#e0cc6c}
 body.touch #bAct{right:max(98px,calc(env(safe-area-inset-right) + 98px));bottom:max(104px,calc(env(safe-area-inset-bottom) + 104px));min-width:72px;min-height:60px}
 body.touch #bCrouch{right:max(98px,calc(env(safe-area-inset-right) + 98px));bottom:max(34px,calc(env(safe-area-inset-bottom) + 34px));min-width:72px}
-body.touch #bCross{right:max(18px,env(safe-area-inset-right));bottom:max(34px,calc(env(safe-area-inset-bottom) + 34px));min-width:72px}
+body.touch #bCross{right:max(18px,env(safe-area-inset-right)) !important;bottom:max(34px,calc(env(safe-area-inset-bottom) + 34px)) !important;min-width:72px}
 body.touch #prompt{left:50%;bottom:calc(env(safe-area-inset-bottom) + 215px);transform:translateX(-50%);max-width:76vw;padding:8px 12px;border:1px solid #d6c77966;border-radius:10px;background:#050503b8;text-align:center}
 body.touch #count{top:10px;left:10px;max-width:46vw;padding:6px 8px;border-radius:8px;background:#0008}
 body.touch #net{top:36px;left:10px;max-width:48vw;padding:4px 7px;border-radius:7px;background:#0008}
