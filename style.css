@@ -174,3 +174,63 @@ body.touch #bRun,body.touch #bCrouch,body.touch #bAct,body.touch #bJump,body.tou
 }
 body.touch #bJump{border-color:#b4a257;background:linear-gradient(145deg,#4b4528ee,#11120bee)}
 @media(prefers-reduced-motion:reduce){body:after,#menu h1{animation:none}}
+
+
+/* NIGHTMARE UI / 2026-10: oppressive analog-surveillance treatment */
+:root{--horror-ink:#030403;--horror-paper:#c6c3a2;--horror-alert:#a54b3f;--horror-line:#77745a}
+html,body{background:#020302;color:var(--horror-paper)}
+#c{filter:contrast(1.07) saturate(.82) brightness(.94)}
+body:before{opacity:.22;background:
+ repeating-linear-gradient(0deg,rgba(0,0,0,.32) 0,rgba(0,0,0,.32) 1px,transparent 1px,transparent 3px),
+ repeating-linear-gradient(90deg,transparent 0,transparent 7px,rgba(190,190,145,.012) 8px),
+ radial-gradient(ellipse at 50% 50%,transparent 30%,rgba(0,0,0,.18) 100%);mix-blend-mode:multiply}
+body:after{background:
+ radial-gradient(ellipse at 50% 46%,transparent 19%,rgba(0,0,0,.26) 53%,rgba(0,0,0,.88) 100%),
+ linear-gradient(180deg,rgba(212,211,167,.035),transparent 14%,transparent 78%,rgba(0,0,0,.46));
+ animation:room-dread 13s steps(1,end) infinite}
+#menu{background:
+ radial-gradient(ellipse at 48% 32%,rgba(91,89,52,.19),transparent 38%),
+ repeating-linear-gradient(0deg,rgba(255,255,255,.012) 0 1px,transparent 1px 4px),
+ linear-gradient(180deg,rgba(8,10,7,.88),rgba(0,0,0,.98))}
+#menu h1{font-family:ui-monospace,Consolas,monospace;font-weight:800;letter-spacing:.18em;color:#c8c7a9;
+ text-shadow:0 0 2px #e6e4c4,0 0 18px #aaa56b22,2px 2px #171811;
+ animation:title-haunt 9s steps(1,end) infinite}
+#menu h1:after{content:" // SIGNAL LOST";display:block;margin-top:9px;font-size:clamp(9px,1.8vw,12px);letter-spacing:.36em;color:#8d4f43;text-shadow:0 0 9px #8e352e55}
+#menu button,#panel button{min-height:46px;border-color:#555743;background:linear-gradient(90deg,rgba(20,22,16,.96),rgba(4,5,4,.98));text-align:left;padding-left:22px;letter-spacing:.07em}
+#menu button:before,#panel button:before{width:2px;background:#8e8a65;opacity:.65}
+#menu button:hover,#panel button:hover{border-color:#9c9b78;background:linear-gradient(90deg,#292b1d,#080907);box-shadow:inset 0 0 22px #c6c39b0b,0 5px 20px #000}
+#menu button:after,#panel button:after{content:"";position:absolute;right:13px;top:50%;width:4px;height:4px;background:#77745a;box-shadow:0 0 6px #a8a27b66;transform:translateY(-50%)}
+#menu #bMulti{border-color:#65413b;color:#d2b3a9}
+#menu #bMulti:before{background:#a34c40}
+#panel{background:
+ radial-gradient(ellipse at 50% 0,rgba(52,53,35,.45),transparent 54%),
+ repeating-linear-gradient(0deg,transparent 0 5px,rgba(255,255,255,.012) 6px),
+ rgba(1,2,1,.97);border-top:1px solid #66664b}
+#panel h2{font-size:clamp(20px,4vw,29px);letter-spacing:.2em;color:#c9c8a9;text-shadow:0 0 14px #c6c39b22}
+#panel h2:before{content:"[ ";color:#8f4c41}#panel h2:after{content:" ]";color:#8f4c41}
+#panel h3{letter-spacing:.08em;color:#aaa98a}
+#panel p{color:#b6b59d}
+#panel label{border-bottom:1px solid #55564266;padding:7px 0}
+#panel input[type=range]{accent-color:#a59d66}
+#panel select,#panel input[type=text]{background:#080a07;color:#d6d4b7;border-color:#66664c;border-radius:0}
+#toast{font-size:clamp(14px,2.5vw,20px);font-weight:700;letter-spacing:.12em;color:#e0d9bd;text-shadow:0 0 3px #000,0 0 15px #a23d31;max-width:800px;margin:auto}
+#toast[style*="opacity: 1"]{animation:warning-flash .24s steps(2,end) 2}
+@keyframes warning-flash{50%{filter:blur(.6px);transform:translateX(1px);color:#c17a6c}}
+#cross{width:3px;height:3px;border:0;background:#e3dfc5;box-shadow:0 0 7px #e3dfc5aa}
+#prompt{font-size:clamp(12px,1.7vw,16px);letter-spacing:.045em;color:#e0ddc6}
+#count,#net{font-size:11px;letter-spacing:.04em;color:#b5b39b}
+#survivalStatus{border-radius:2px;border-color:#77745a55;box-shadow:0 4px 24px #0009,inset 0 0 18px #a99b3908}
+#survivalStatus i{border-radius:0;height:5px}
+#survivalStatus em{transition:width .18s linear;filter:saturate(.78)}
+#chatBox{border-radius:2px;border-color:#6b694d}
+#chatHead{letter-spacing:.1em;text-transform:uppercase;font-size:12px}
+#stick{border-radius:50%;border-color:#8c8b6a55}
+body.touch #bPause,body.touch #bClue,body.touch #bChat,body.touch #bVoice,
+body.touch #bRun,body.touch #bCrouch,body.touch #bAct,body.touch #bJump,body.touch #bCross{
+ border-radius:3px;border-color:#79765a99;background:linear-gradient(145deg,rgba(17,19,14,.94),rgba(2,3,2,.98));
+ box-shadow:0 5px 18px #000b,inset 0 0 0 1px #000a;color:#dedcc0;backdrop-filter:blur(5px)}
+body.touch #bJump{border-color:#9e7259;background:linear-gradient(145deg,#34251eee,#0b0908ee)}
+body.touch #bAct{border-color:#77765b}
+body.touch #prompt{border-radius:2px;border-color:#77745a55;background:rgba(2,3,2,.82)}
+@media(max-width:600px){#menu{gap:9px}#menu button{width:min(310px,88vw);min-height:43px;font-size:15px;padding:10px 18px}#menu h1{letter-spacing:.1em}#menu h1:after{letter-spacing:.2em}#panel{gap:10px}}
+@media(prefers-reduced-motion:reduce){#menu h1,#toast[style*="opacity: 1"]{animation:none}}
