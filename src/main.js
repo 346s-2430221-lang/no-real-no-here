@@ -142,8 +142,8 @@ Game.mpEnd=function(){Game.state='ui';Game.unlock();UI.panel('<h2>탈출 성공<
   // 소매 끝단의 봉제선과 살짝 울어 있는 천 가장자리
   const cuff=new THREE.Mesh(new THREE.TorusGeometry(.095,.004,4,20),wrinkleDark);cuff.scale.set(1,.72,1);cuff.position.set(-.08,-.177,-.02);cuff.rotation.x=Math.PI/2;viewModel.add(cuff);
   const hand=new THREE.Mesh(new THREE.SphereGeometry(.075,10,8),skinMat);hand.position.set(.015,.025,-.12);viewModel.add(hand);const flashlight=new THREE.Mesh(new THREE.CylinderGeometry(.045,.055,.25,10),flashMat);flashlight.rotation.x=Math.PI/2;flashlight.rotation.z=-.12;flashlight.position.set(.08,.06,-.2);viewModel.add(flashlight);const flashHead=new THREE.Mesh(new THREE.CylinderGeometry(.07,.045,.055,10),flashMat);flashHead.rotation.x=Math.PI/2;flashHead.position.set(.08,.06,-.34);viewModel.add(flashHead);Game.viewMats={sleeveMat,flashMat,flashHead};
- scene.background=new THREE.Color(0x121207);scene.fog=Game.fog=new THREE.FogExp2(0x1c1c08,.038);Game.amb=new THREE.AmbientLight(0x6a6a30,.48);scene.add(Game.amb);Game.hemi=new THREE.HemisphereLight(0xd6d0a0,0x24200e,.34);scene.add(Game.hemi);
- R.outputEncoding=THREE.sRGBEncoding;R.toneMapping=THREE.ACESFilmicToneMapping;R.toneMappingExposure=1.12;R.physicallyCorrectLights=true;R.setClearColor(0x111108,1);R.sortObjects=true;R.setPixelRatio(Math.min(devicePixelRatio||1,1.75));
+ scene.background=new THREE.Color(0x0c0e09);scene.fog=Game.fog=new THREE.FogExp2(0x15170f,.042);Game.amb=new THREE.AmbientLight(0x56583c,.34);scene.add(Game.amb);Game.hemi=new THREE.HemisphereLight(0xc5c2a0,0x17190f,.27);scene.add(Game.hemi);
+ R.outputEncoding=THREE.sRGBEncoding;R.toneMapping=THREE.ACESFilmicToneMapping;R.toneMappingExposure=.98;R.physicallyCorrectLights=true;R.setClearColor(0x111108,1);R.sortObjects=true;R.setPixelRatio(Math.min(devicePixelRatio||1,1.75));
  R.shadowMap.type=THREE.PCFShadowMap;
  const resize=()=>{R.setSize(innerWidth,innerHeight,false);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()};addEventListener('resize',resize);resize();
  Player.init();Levels.load('level0',scene);Game.apply();
@@ -158,6 +158,6 @@ Game.mpEnd=function(){Game.state='ui';Game.unlock();UI.panel('<h2>탈출 성공<
   if(Game.state==='play'){if(Game.state==='play')Player.update(dt,cam);Game.stayTick(dt);Game.survivalTick(dt);if(Game.mode==='sp'&&Save.id)Save.data.play+=dt;Interact.update(Player.x,Player.z,Player.yaw);Game.zt=Levels.zone(Player.x,Player.z);Aud.setZone(Game.zt);if((st+=dt)>5){st=0;Game.persist()}}
   else if(Game.state==='menu'){Game.zt=0;const x=4+(t*1.2)%60;cam.position.set(x,1.7,7*CS+Math.sin(t*.5)*.3);cam.lookAt(x+5,1.6,7*CS)}
   Game.adaptPerformance();if(Game.viewMats&&Save.data.equip&&Save.data.equip.c==='c7')Game.viewMats.sleeveMat.color.setHSL((t*.12)%1,.98,.58);const dk=Game.zt===Levels.def.darkZone,tf=(dk?.072:Game.zt===0?.035:.048)*(Save.data.settings.quality==='low'?1.2:1),k=Math.min(1,dt*2);
-  Game.fog.density+=(tf-Game.fog.density)*k;Game.amb.intensity+=(Math.max(.2,(dk?.31:.48)*Levels.dimMul())-Game.amb.intensity)*k;Game.hemi.intensity+=(Math.max(.12,(dk?.19:.34)*Levels.dimMul())-Game.hemi.intensity)*k;
+  Game.fog.density+=(tf-Game.fog.density)*k;Game.amb.intensity+=(Math.max(.13,(dk?.19:.34)*Levels.dimMul())-Game.amb.intensity)*k;Game.hemi.intensity+=(Math.max(.09,(dk?.12:.25)*Levels.dimMul())-Game.hemi.intensity)*k;
   Net.update(dt);Levels.update(t,cam.position.x,cam.position.z,dt);R.render(scene,cam)})();
 })();
