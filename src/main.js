@@ -131,7 +131,7 @@ Game.mpEnd=function(){Game.state='ui';Game.unlock();UI.panel('<h2>탈출 성공<
 (function(){
  if(typeof THREE==='undefined'){UI.panel('<h2>오류</h2><p>Three.js를 불러오지 못했습니다.<br>인터넷 연결을 확인하거나 libs/three.min.js 파일이 있는지 확인하세요.</p>');return}
  Save.load();Game.initSurvival();if('ontouchstart' in window||navigator.maxTouchPoints>0)document.body.classList.add('touch');Game.perfEl=document.createElement('div');Game.perfEl.id='fpsCounter';Game.perfEl.style.cssText='position:fixed;right:12px;top:12px;z-index:8;padding:4px 7px;border:1px solid #6a5a2066;border-radius:6px;background:#0009;color:#d8c860;font:12px monospace;pointer-events:none;display:none';document.body.appendChild(Game.perfEl);
- let R;try{R=Game.R=new THREE.WebGLRenderer({canvas:UI.$('c')})}catch(e){UI.panel('<h2>오류</h2><p>이 브라우저에서 WebGL을 사용할 수 없습니다. 다른 브라우저를 사용해 보세요.</p>');return}
+ let R;try{R=Game.R=new THREE.WebGLRenderer({canvas:UI.$('c'),antialias:true,powerPreference:'high-performance',alpha:false})}catch(e){UI.panel('<h2>오류</h2><p>이 브라우저에서 WebGL을 사용할 수 없습니다. 다른 브라우저를 사용해 보세요.</p>');return}
  const scene=Game.scene=new THREE.Scene(),cam=Game.cam=new THREE.PerspectiveCamera(72,1,.08,180);
  const viewModel=new THREE.Group();viewModel.position.set(.42,-.38,-.72);cam.add(viewModel);Game.viewModel=viewModel;const sleeveMat=new THREE.MeshStandardMaterial({color:0x77745a,roughness:.96}),skinMat=new THREE.MeshStandardMaterial({color:0x8d7967,roughness:1}),flashMat=new THREE.MeshStandardMaterial({color:0x333333,metalness:.5,roughness:.45});const sleeve=new THREE.Mesh(new THREE.BoxGeometry(.19,.28,.22),sleeveMat);sleeve.position.set(-.08,-.06,-.02);sleeve.castShadow=false;viewModel.add(sleeve);
   // 탐험복 원단의 주름: 소매 앞면에 낮은 대비의 굴곡선과 눌린 접힘선을 추가한다.
@@ -143,6 +143,17 @@ Game.mpEnd=function(){Game.state='ui';Game.unlock();UI.panel('<h2>탈출 성공<
   const cuff=new THREE.Mesh(new THREE.TorusGeometry(.095,.004,4,20),wrinkleDark);cuff.scale.set(1,.72,1);cuff.position.set(-.08,-.177,-.02);cuff.rotation.x=Math.PI/2;viewModel.add(cuff);
   const hand=new THREE.Mesh(new THREE.SphereGeometry(.075,10,8),skinMat);hand.position.set(.015,.025,-.12);viewModel.add(hand);const flashlight=new THREE.Mesh(new THREE.CylinderGeometry(.045,.055,.25,10),flashMat);flashlight.rotation.x=Math.PI/2;flashlight.rotation.z=-.12;flashlight.position.set(.08,.06,-.2);viewModel.add(flashlight);const flashHead=new THREE.Mesh(new THREE.CylinderGeometry(.07,.045,.055,10),flashMat);flashHead.rotation.x=Math.PI/2;flashHead.position.set(.08,.06,-.34);viewModel.add(flashHead);Game.viewMats={sleeveMat,flashMat,flashHead};
  scene.background=new THREE.Color(0x0c0e09);scene.fog=Game.fog=new THREE.FogExp2(0x15170f,.042);Game.amb=new THREE.AmbientLight(0x56583c,.34);scene.add(Game.amb);Game.hemi=new THREE.HemisphereLight(0xc5c2a0,0x17190f,.27);scene.add(Game.hemi);
+ // 카메라에 붙는 저비용 손전등: 좁은 빛 원뿔과 부드러운 감쇠로 어두운 복도에 깊이감을 준다.
+ const flashlightBeam=new THREE.SpotLight(0xffefc5,18,24,Math.PI/7.2,.68,1.35);
+ flashlightBeam.position.set(.08,.035,-.34);flashlightBeam.target.position.set(.08,-.02,-12);
+ cam.add(flashlightBeam);cam.add(flashlightBeam.target);Game.flashlightBeam=flashlightBeam;
+ // 손전등 빛 속에만 드러나는 미세 먼지 입자. 포인트 수를 제한해 모바일 성능을 고려한다.
+ const dustGeo=new THREE.BufferGeometry(),dustPos=new Float32Array(144*3);
+ for(let i=0;i<144;i++){dustPos[i*3]=(Math.random()-.5)*7;dustPos[i*3+1]=(Math.random()-.5)*4.2;dustPos[i*3+2]=-1.2-Math.random()*11}
+ dustGeo.setAttribute('position',new THREE.BufferAttribute(dustPos,3));
+ const dustMat=new THREE.PointsMaterial({color:0xd9d3ad,size:.022,transparent:true,opacity:.25,depthWrite:false,sizeAttenuation:true});
+ const dust=new THREE.Points(dustGeo,dustMat);dust.frustumCulled=false;cam.add(dust);Game.dust=dust;
+
  R.outputEncoding=THREE.sRGBEncoding;R.toneMapping=THREE.ACESFilmicToneMapping;R.toneMappingExposure=.98;R.physicallyCorrectLights=true;R.setClearColor(0x111108,1);R.sortObjects=true;R.setPixelRatio(Math.min(devicePixelRatio||1,1.75));
  R.shadowMap.type=THREE.PCFShadowMap;
  const resize=()=>{R.setSize(innerWidth,innerHeight,false);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()};addEventListener('resize',resize);resize();
@@ -159,5 +170,5 @@ Game.mpEnd=function(){Game.state='ui';Game.unlock();UI.panel('<h2>탈출 성공<
   else if(Game.state==='menu'){Game.zt=0;const x=4+(t*1.2)%60;cam.position.set(x,1.7,7*CS+Math.sin(t*.5)*.3);cam.lookAt(x+5,1.6,7*CS)}
   Game.adaptPerformance();if(Game.viewMats&&Save.data.equip&&Save.data.equip.c==='c7')Game.viewMats.sleeveMat.color.setHSL((t*.12)%1,.98,.58);const dk=Game.zt===Levels.def.darkZone,tf=(dk?.072:Game.zt===0?.035:.048)*(Save.data.settings.quality==='low'?1.2:1),k=Math.min(1,dt*2);
   Game.fog.density+=(tf-Game.fog.density)*k;Game.amb.intensity+=(Math.max(.13,(dk?.19:.34)*Levels.dimMul())-Game.amb.intensity)*k;Game.hemi.intensity+=(Math.max(.09,(dk?.12:.25)*Levels.dimMul())-Game.hemi.intensity)*k;
-  Net.update(dt);Levels.update(t,cam.position.x,cam.position.z,dt);R.render(scene,cam)})();
+  Net.update(dt);Levels.update(t,cam.position.x,cam.position.z,dt);if(Game.flashlightBeam){const flicker=(Math.sin(t*7.1)*.35+Math.sin(t*17.3)*.18);Game.flashlightBeam.intensity=Game.state==='play'?Math.max(11,18+flicker):0}if(Game.dust){Game.dust.visible=Game.state==='play';Game.dust.rotation.y=Math.sin(t*.13)*.025;Game.dust.rotation.x=Math.cos(t*.17)*.012}R.render(scene,cam)})();
 })();
