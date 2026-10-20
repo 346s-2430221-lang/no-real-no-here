@@ -1,5 +1,5 @@
 const Player={x:0,z:0,yaw:0,pitch:0,vx:0,vz:0,keys:{},mv:{x:0,y:0},run:false,crouch:false,bob:0,sd:0,jumpY:0,jumpV:0,
- spawn(x,z,yaw){Object.assign(this,{x,z,yaw:yaw||0,pitch:0,vx:0,vz:0})},
+ spawn(x,z,yaw){Object.assign(this,{x,z,yaw:yaw||0,pitch:0,vx:0,vz:0,jumpY:0,jumpV:0,jumpBoost:false,crouch:false})},
  clampP(p){return Math.max(-1.3,Math.min(1.3,p))},
  init(){
   addEventListener('keydown',e=>{if(e.code==='Tab'){if(Game.state==='play'||Game.cluesOpen){e.preventDefault();if(Game.state==='play')Game.clues();else Game.closeUI()}return}if(e.code==='Escape'&&Game.state==='ui'&&Game.uiC){Game.closeUI();return}this.keys[e.code]=true;if(e.code==='Space'&&!e.repeat&&Game.state==='play'&&this.jumpY<=0.001){e.preventDefault();this.jumpV=(this.keys.ShiftLeft||this.keys.ShiftRight||this.run)?6.7:5.1;this.jumpBoost=(this.keys.ShiftLeft||this.keys.ShiftRight||this.run)&&!this.crouch}if(e.code==='KeyE'&&!e.repeat&&Game.state==='play')Interact.trigger();if(e.code==='KeyC'&&!e.repeat&&Game.state==='play')this.crouch=!this.crouch});
