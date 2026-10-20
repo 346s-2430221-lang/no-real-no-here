@@ -153,6 +153,7 @@ Game.mpEnd=function(){Game.state='ui';Game.unlock();UI.panel('<h2>탈출 성공<
  dustGeo.setAttribute('position',new THREE.BufferAttribute(dustPos,3));
  const dustMat=new THREE.PointsMaterial({color:0xd9d3ad,size:.022,transparent:true,opacity:.25,depthWrite:false,sizeAttenuation:true});
  const dust=new THREE.Points(dustGeo,dustMat);dust.frustumCulled=false;cam.add(dust);Game.dust=dust;
+ const beam=new THREE.Mesh(new THREE.ConeGeometry(1.85,10.8,12,1,true),new THREE.MeshBasicMaterial({color:0xded8b0,transparent:true,opacity:.024,depthWrite:false,side:THREE.DoubleSide}));beam.rotation.x=Math.PI/2;beam.position.set(.08,.02,-5.45);beam.frustumCulled=false;cam.add(beam);Game.flashlightVolume=beam;
 
  R.outputEncoding=THREE.sRGBEncoding;R.toneMapping=THREE.ACESFilmicToneMapping;R.toneMappingExposure=.98;R.physicallyCorrectLights=true;R.setClearColor(0x111108,1);R.sortObjects=true;R.setPixelRatio(Math.min(devicePixelRatio||1,1.75));
  R.shadowMap.type=THREE.PCFShadowMap;
@@ -170,5 +171,5 @@ Game.mpEnd=function(){Game.state='ui';Game.unlock();UI.panel('<h2>탈출 성공<
   else if(Game.state==='menu'){Game.zt=0;const x=4+(t*1.2)%60;cam.position.set(x,1.7,7*CS+Math.sin(t*.5)*.3);cam.lookAt(x+5,1.6,7*CS)}
   Game.adaptPerformance();if(Game.viewMats&&Save.data.equip&&Save.data.equip.c==='c7')Game.viewMats.sleeveMat.color.setHSL((t*.12)%1,.98,.58);const dk=Game.zt===Levels.def.darkZone,tf=(dk?.072:Game.zt===0?.035:.048)*(Save.data.settings.quality==='low'?1.2:1),k=Math.min(1,dt*2);
   Game.fog.density+=(tf-Game.fog.density)*k;Game.amb.intensity+=(Math.max(.13,(dk?.19:.34)*Levels.dimMul())-Game.amb.intensity)*k;Game.hemi.intensity+=(Math.max(.09,(dk?.12:.25)*Levels.dimMul())-Game.hemi.intensity)*k;
-  Net.update(dt);Levels.update(t,cam.position.x,cam.position.z,dt);if(Game.flashlightBeam){const flicker=(Math.sin(t*7.1)*.35+Math.sin(t*17.3)*.18);Game.flashlightBeam.intensity=Game.state==='play'?Math.max(11,18+flicker):0}if(Game.dust){Game.dust.visible=Game.state==='play';Game.dust.rotation.y=Math.sin(t*.13)*.025;Game.dust.rotation.x=Math.cos(t*.17)*.012}R.render(scene,cam)})();
+  Net.update(dt);Levels.update(t,cam.position.x,cam.position.z,dt);if(Game.flashlightBeam){const flicker=(Math.sin(t*7.1)*.35+Math.sin(t*17.3)*.18);Game.flashlightBeam.intensity=Game.state==='play'?Math.max(11,18+flicker):0}if(Game.dust){Game.dust.visible=Game.state==='play';Game.dust.rotation.y=Math.sin(t*.13)*.025;Game.dust.rotation.x=Math.cos(t*.17)*.012}if(Game.flashlightVolume){Game.flashlightVolume.visible=Game.state==='play';Game.flashlightVolume.material.opacity=.02+Math.max(0,Math.sin(t*7.1)*.35)*.01}R.render(scene,cam)})();
 })();
