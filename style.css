@@ -123,3 +123,54 @@ body.touch #bRun:active,body.touch #bJump:active,body.touch #bAct:active,body.to
  body.touch #prompt{bottom:112px}
  body.touch #chatBox{max-height:55vh}
 }
+
+
+/* HORROR PASS: analog interference, stained-glass darkness, diegetic controls */
+:root{--rust:#9b4b36;--sick:#c8c078;--panel:#080907}
+body{background:#020302;color:#d4cda6}
+body:before{content:"";position:fixed;inset:0;z-index:3;pointer-events:none;opacity:.16;
+ background:repeating-linear-gradient(0deg,rgba(0,0,0,.42) 0,rgba(0,0,0,.42) 1px,transparent 1px,transparent 4px),
+ linear-gradient(90deg,transparent 0%,rgba(190,177,104,.035) 48%,transparent 100%);
+ mix-blend-mode:multiply}
+body:after{background:radial-gradient(ellipse at 50% 44%,transparent 25%,rgba(0,0,0,.2) 58%,rgba(0,0,0,.78) 100%),
+ linear-gradient(180deg,rgba(210,198,125,.055),transparent 18%,transparent 72%,rgba(0,0,0,.32));
+ animation:room-dread 11s steps(1,end) infinite}
+@keyframes room-dread{0%,91%,93%,97%,100%{opacity:1}92%{opacity:.78}94%{opacity:.92}96%{opacity:.84}}
+#menu{background:radial-gradient(ellipse at 50% 35%,rgba(47,48,25,.36),rgba(0,0,0,.94) 68%),linear-gradient(135deg,#11120b,#020302 65%);
+ gap:13px}
+#menu h1{font-size:clamp(27px,6.4vw,62px);font-weight:900;letter-spacing:.16em;color:#d5d0a4;
+ text-shadow:0 0 3px #f5edc0,0 0 14px #99904a55,3px 3px 0 #29291d;animation:title-haunt 8s infinite}
+@keyframes title-haunt{0%,94%,100%{filter:none;transform:none}95%{filter:blur(.5px);transform:translateX(1px);text-shadow:-3px 0 #7d3e35,3px 0 #8b8a52}96%{filter:none;transform:translateX(-1px)}}
+#menu button,#panel button{position:relative;overflow:hidden;letter-spacing:.035em;
+ border:1px solid #716b43;border-radius:3px;
+ background:linear-gradient(100deg,rgba(28,29,20,.96),rgba(7,8,6,.96));
+ color:#ded9b4;box-shadow:inset 0 0 0 1px #000,0 7px 24px #0009;
+ transition:background .18s,border-color .18s,transform .18s}
+#menu button:before,#panel button:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:#827b4b;opacity:.8}
+#menu button:hover,#panel button:hover{background:linear-gradient(100deg,#3b3a25,#10110c);border-color:#c6bc7b;color:#fff5c9}
+#menu button:active,#panel button:active{transform:scale(.985)}
+#menu #bMulti{border-color:#72534a}
+#menu #bMulti:before{background:#a35b4a}
+#menu #hint{color:#b2ae91;font-size:clamp(11px,1.5vw,13px);max-width:650px}
+#menu #est{color:#777762}
+#panel{background:radial-gradient(ellipse at top,rgba(45,45,28,.65),rgba(1,2,1,.97) 68%);
+ border-top:1px solid #7d7645;box-shadow:0 0 90px #000;backdrop-filter:blur(12px) saturate(.7)}
+#panel h2{color:#ddd4a0;text-shadow:0 0 14px #a49a4a55;letter-spacing:.12em;text-transform:uppercase}
+#panel h3{color:#aaa67f}
+#panel p{color:#c5c1a8}
+.slot{border:1px solid #4a4934;background:linear-gradient(110deg,#11120ddd,#050604e8);box-shadow:inset 3px 0 #4e4a2e,0 5px 18px #0005}
+#toast{color:#f0e7b1;text-shadow:0 0 5px #000,0 0 18px #c1ad55;letter-spacing:.1em}
+#cross{width:5px;height:5px;background:#ded6a9;border:1px solid #090a06;box-shadow:0 0 5px #d5c878}
+#prompt{color:#eee6bc;text-shadow:0 2px 5px #000,0 0 12px #000}
+#count,#net{color:#d4d0ad;text-shadow:0 2px 4px #000}
+#survivalStatus{border-color:#77734a88;background:linear-gradient(135deg,rgba(4,5,3,.88),rgba(20,20,12,.52));box-shadow:0 4px 22px #0008,inset 0 0 18px #a99b3910}
+#survivalStatus i{background:#080906;border-color:#55543b}
+#chatBox{border-color:#625d3c;background:rgba(3,4,3,.96);box-shadow:0 0 35px #000,inset 0 0 24px #b8a74a08}
+#stick{border-color:#a49a5b99;box-shadow:inset 0 0 28px #000c,0 0 25px #0008}
+body.touch #bPause,body.touch #bClue,body.touch #bChat,body.touch #bVoice,
+body.touch #bRun,body.touch #bCrouch,body.touch #bAct,body.touch #bJump,body.touch #bCross{
+ border-color:#a59a5d99;background:linear-gradient(145deg,rgba(23,24,16,.94),rgba(3,4,3,.96));
+ box-shadow:0 5px 16px #000b,inset 0 0 0 1px #0008;color:#eee7c6
+}
+body.touch #bJump{border-color:#b4a257;background:linear-gradient(145deg,#4b4528ee,#11120bee)}
+@media(prefers-reduced-motion:reduce){body:after,#menu h1{animation:none}}
