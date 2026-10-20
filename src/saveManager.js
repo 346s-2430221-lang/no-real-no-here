@@ -4,7 +4,7 @@ const Save={IDX:'nrnh_slots_v1',GS:'nrnh_settings_v1',VER:4,GAME:'NO REAL NO HER
  defGS(){return{vol:.6,sensPC:1,sensMob:1,quality:'auto',fov:72,btn:1,srv:'',name:'',voiceOut:.85,voicePTT:false,voiceMute:false,voiceKey:'KeyV'}},
  world(){return{team:{mara:'unknown',jin:'unknown'},keys:[],obs:[],env:{},fake:{taken:[],seen:0,retry:null,retryOk:false},done:{},ptypes:[]}},
  blank(name,mode){const t=Date.now();return{ver:this.VER,id:'s'+t.toString(36)+Math.floor(Math.random()*46656).toString(36),name:name||'',mode:mode||'solo',created:t,saved:t,play:0,level:'level0',pos:null,cp:null,started:false,lv:{},unl:{level0:true},
-  diff:'normal',fear:'normal',acc:{flicker:true,shake:true,loud:true,fx:true},wallet:0,total:0,runCoins:0,totalRunCoins:0,health:100,stamina:100,sanity:100,earned:{},owned:[],equip:{c:'c0',h:'h0'},ach:{},endings:{},world:this.world()}},
+  diff:'normal',fear:'normal',acc:{flicker:true,shake:true,loud:true,fx:true},wallet:0,total:0,runCoins:0,totalRunCoins:0,health:100,stamina:150,sanity:100,earned:{},owned:[],equip:{c:'c0',h:'h0'},ach:{},endings:{},world:this.world()}},
  num(v,d,a,b){v=+v;return Number.isFinite(v)?Math.min(b,Math.max(a,v)):d},
  rd(k){try{const v=localStorage.getItem(k);return v==null?null:JSON.parse(v)}catch(e){return undefined}},
  norm(d){const b=this.blank();d.name=String(d.name||'').slice(0,20)||'게임';d.mode=d.mode==='mp'?'mp':'solo';d.created=this.num(d.created,Date.now(),0,9e15);d.saved=this.num(d.saved,d.created,0,9e15);d.play=this.num(d.play,0,0,1e9);
@@ -12,7 +12,7 @@ const Save={IDX:'nrnh_slots_v1',GS:'nrnh_settings_v1',VER:4,GAME:'NO REAL NO HER
   if(d.cp&&!(Number.isFinite(d.cp.x)&&Number.isFinite(d.cp.z)&&NRNH.LEVELS[d.cp.level]))d.cp=null;d.started=!!d.started;if(!isObj(d.lv))d.lv={};if(!isObj(d.unl))d.unl={};d.unl.level0=true;
   d.diff=['easy','normal','hard','nightmare'].includes(d.diff)?d.diff:'normal';d.fear=['low','normal','high','extreme'].includes(d.fear)?d.fear:'normal';
   d.acc=Object.assign({},b.acc,isObj(d.acc)?d.acc:{});for(const k in b.acc)d.acc[k]=!!d.acc[k];
-  d.health=this.num(d.health,100,0,100);d.stamina=this.num(d.stamina,100,0,100);d.sanity=this.num(d.sanity,100,0,100);d.wallet=Math.floor(this.num(d.wallet,0,0,1e9));d.total=Math.floor(this.num(d.total,d.wallet,0,1e9));d.runCoins=Math.floor(this.num(d.runCoins,0,0,1e6));d.totalRunCoins=Math.floor(this.num(d.totalRunCoins,d.runCoins,0,1e9));if(!isObj(d.earned))d.earned={};
+  d.health=this.num(d.health,100,0,100);d.stamina=this.num(d.stamina,150,0,150);d.sanity=this.num(d.sanity,100,0,100);d.wallet=Math.floor(this.num(d.wallet,0,0,1e9));d.total=Math.floor(this.num(d.total,d.wallet,0,1e9));d.runCoins=Math.floor(this.num(d.runCoins,0,0,1e6));d.totalRunCoins=Math.floor(this.num(d.totalRunCoins,d.runCoins,0,1e9));if(!isObj(d.earned))d.earned={};
   d.owned=Array.isArray(d.owned)?d.owned.filter(x=>typeof x==='string').slice(0,200):[];d.equip=Object.assign({c:'c0',h:'h0'},isObj(d.equip)?d.equip:{});if(typeof d.equip.c!=='string')d.equip.c='c0';if(typeof d.equip.h!=='string')d.equip.h='h0';
   if(!isObj(d.ach))d.ach={};if(!isObj(d.endings))d.endings={};
   const W=d.world=Object.assign(this.world(),isObj(d.world)?d.world:{});if(!isObj(W.team))W.team=this.world().team;for(const k of['mara','jin'])if(!['unknown','rescued','missing','dead'].includes(W.team[k]))W.team[k]='unknown';
