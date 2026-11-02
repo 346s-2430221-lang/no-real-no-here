@@ -43,7 +43,7 @@ const dg=(A,i)=>+A.p2[i];
 const L0={id:'level0',name:'LEVEL 0',next:'level1',darkZone:5,intro:'어디선가 형광등이 윙윙거린다. 이곳이 어디인지, 어떻게 왔는지 기억나지 않는다.',
  goal:'복도 끝의 잠긴 문을 열고 사무실 구역을 지나, 최종 구역 분전함에 퓨즈 2개를 꽂아 출구를 열어라.',
  map:g.out(),start:{cx:4,cy:39,yaw:-Math.PI/2},exit:{cx:63,cy0:5,cy1:6},
- keyPickups:[{cx:35,cy:15,id:'level0_key'}],keyRoom:{door:'keyRoom',cell:{cx:39,cy:7},rewardNote:'열쇠방 기록: 벽 안쪽에서 오래된 탐험 기록을 발견했다. 이 방은 탈출 경로가 아니라 숨겨진 보관실이다.'},
+ keyPickups:[{cx:35,cy:15,id:'level0_key'}],keyRoom:{door:'keyRoom',cell:{cx:39,cy:7},noteAt:{cx:34,cy:6},rewardNote:'열쇠방 기록: 벽 안쪽에서 오래된 탐험 기록을 발견했다. 이 방은 탈출 경로가 아니라 숨겨진 보관실이다.'},
  doors:{d1:{lockedMsg:'잠겨 있다. 문 옆 벽의 키패드에 비밀번호를 입력해야 한다.'},d2:{lockedMsg:'사무실 깊은 곳의 문이다. 4자리 비밀번호가 필요하다.'},exit:{lockedMsg:'전원이 꺼져 있다. 분전함에 퓨즈 2개가 필요하다.'}},
  notes:[
   {cx:11,cy:21,text:A=>'복도 끝 문의 비밀번호, 첫 번째 숫자는 '+A.p1[0]+'. 기록실 선반 번호였다.'},
