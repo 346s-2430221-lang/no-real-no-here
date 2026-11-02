@@ -160,6 +160,42 @@ function makeLargeLevel(meta,idx){
  });
  // Two lateral cross-routes join distant wings; these prevent a single straight corridor run.
  gg.c(10,mid-7,66,mid-5,'.');gg.c(12,mid+5,64,mid+7,'.');
+ // Escape-the-Backrooms-inspired spatial language: broad liminal rooms,
+ // narrow service connectors, blind alcoves, and looping side routes.
+ // Each level gets a different partition rhythm instead of reusing one empty spine.
+ const reserved=new Set([
+   ...[[8,mid-9],[16,mid+11],[43,mid-9],[69,mid+11],
+       [5,mid-15],[17,mid+13],[25,mid-15],[34,mid+13],[43,mid-14],[69,mid+12],
+       [3,mid],[W-2,mid]].map(([x,y])=>y*W+x)
+ ]);
+ const addPartition=(x0,y0,x1,y1,vertical,gapA,gapB)=>{
+   if(vertical){
+     for(let y=y0;y<=y1;y++){if(y===gapA||y===gapB||reserved.has(y*W+x0))continue;gg.s(x0,y,'#')}
+   }else{
+     for(let x=x0;x<=x1;x++){if(x===gapA||x===gapB||reserved.has(y0*W+x))continue;gg.s(x,y0,'#')}
+   }
+ };
+ centers.forEach((cx,j)=>{
+   const top=j%2===0, y0=top?5:mid+4, y1=top?mid-4:H-6;
+   const vx=cx+(j%3===0?2:-1);
+   if(idx%5===0){ // city/suburb: rectangular room blocks with door-like breaks
+     addPartition(Math.min(W-4,cx+2),y0,y1,y1,true,Math.floor((y0+y1)/2),Math.floor((y0+y1)/2)+3);
+     addPartition(cx-3,top?10:mid+10,cx+3,top?10:mid+10,false,cx-1,cx+2);
+   }else if(idx%5===1){ // utility / pipe maze: alternating narrow partitions
+     addPartition(Math.min(W-4,cx+1),y0,y1,y1,true,y0+3,y0+8);
+     addPartition(cx-3,top?16:mid+13,cx+3,top?16:mid+13,false,cx,cx+2);
+   }else if(idx%5===2){ // poolrooms / flooded halls: large open basins with separated walkways
+     addPartition(cx-3,top?9:mid+9,cx+3,top?9:mid+9,false,cx-2,cx+2);
+     addPartition(Math.min(W-4,cx+3),top?10:mid+9,top?10:mid+9,top?18:mid+17,true,top?14:mid+13);
+   }else if(idx%5===3){ // funhouse / maze: offset partitions create loops and false-looking dead ends
+     addPartition(cx-2,y0,cx-2,y1,true,y0+2,y1-2);
+     addPartition(cx+2,top?12:mid+12,cx+2,top?12:mid+12,true,top?12:mid+12);
+     addPartition(cx-2,top?17:mid+15,cx+2,top?17:mid+15,false,cx,cx+1);
+   }else{ // institutional wings: rooms branching off long hallways
+     addPartition(cx-3,top?11:mid+11,cx+3,top?11:mid+11,false,cx-1,cx+1);
+     addPartition(Math.min(W-4,cx+3),y0,y1,y1,true,y0+4,y1-3);
+   }
+ });
  // Restore solid borders and mark a real exit at the far east end.
  for(let y=0;y<H;y++){gg.s(0,y,'#');gg.s(W-1,y,'#')}
  for(let x=0;x<W;x++){gg.s(x,0,'#');gg.s(x,H-1,'#')}
