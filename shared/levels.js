@@ -1,5 +1,5 @@
 (function(root){'use strict';
-const CS=3,DCH={'1':'d1','2':'d2','3':'x1','E':'exit'};
+const CS=3,DCH={'1':'d1','2':'d2','3':'x1','K':'keyRoom','E':'exit'};
 function rng(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 function hs(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
 function grid(W,H){const m=Array.from({length:H},()=>Array(W).fill('#'));return{c(x0,y0,x1,y1,ch){ch=ch||'.';for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)m[y][x]=ch},s(x,y,ch){m[y][x]=ch},out:()=>m.map(r=>r.join(''))}}
