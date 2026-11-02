@@ -137,8 +137,8 @@ const Levels={defs:NRNH.LEVELS,scene:null,grp:null,lights:[],nl:5,panels:[],map:
     Interact.add({x:k.position.x,z:k.position.z,r:2,hide:()=>st.keyPickups.includes(it.id),label:()=>st.keyPickups.includes(it.id)?'':'[E] 오래된 열쇠 줍기',act:()=>{if(st.keyPickups.includes(it.id))return;st.keyPickups.push(it.id);st.hasLevel0Key=true;k.visible=false;Aud.paper();UI.toast('오래된 열쇠를 획득했다. 숨겨진 열쇠방 문을 열 수 있다!');L.refresh()}});
    });
   }
-  if(d.keyRoom&&st.keyRoomUnlocked&&!st.keyRoomNoteSeen){
-   Interact.add({x:(d.keyRoom.noteAt.cx+.5)*CS,z:(d.keyRoom.noteAt.cy+.5)*CS,r:2.2,label:()=>'[E] 숨겨진 기록 읽기',act:()=>{st.keyRoomNoteSeen=true;UI.panel('<h2>열쇠방 기록</h2><p>'+d.keyRoom.rewardNote+'</p><button id="keyRoomClose">닫기</button>');UI.$('keyRoomClose').onclick=()=>{UI.close();Game.state='play'}}});
+  if(d.keyRoom){
+   Interact.add({x:(d.keyRoom.noteAt.cx+.5)*CS,z:(d.keyRoom.noteAt.cy+.5)*CS,r:2.2,hide:()=>!st.keyRoomUnlocked||!!st.keyRoomNoteSeen,label:()=>'[E] 숨겨진 기록 읽기',act:()=>{st.keyRoomNoteSeen=true;UI.panel('<h2>열쇠방 기록</h2><p>'+d.keyRoom.rewardNote+'</p><button id="keyRoomClose">닫기</button>');UI.$('keyRoomClose').onclick=()=>{UI.close();Game.state='play'}}});
   }
   // 맵별 탐험 코인 6개. 수집 상태는 저장 슬롯에 기록한다.
   if(!Array.isArray(st.coins))st.coins=[];
