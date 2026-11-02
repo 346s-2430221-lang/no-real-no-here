@@ -37,6 +37,17 @@ assert.equal(LEVELS.level9.next,'level9b','Poolrooms floor 1 leads to floor 2');
 assert.equal(LEVELS.level9b.next,'level10','Poolrooms floor 2 leads onward');
 assert.equal(LEVELS.sanctuary.safe,true,'sanctuary must be safe');
 assert.equal(LEVELS.glitchshop.safe,true,'glitch shop must not spawn entities');
+assert.ok(LEVELS.level0.keyPickups?.some(k=>k.id==='level0_key'),'Level 0 has a collectible key');
+assert.ok(LEVELS.level0.keyRoom&&LEVELS.level0.keyRoom.door==='keyRoom','Level 0 has a key-locked hidden room');
+assert.ok(LEVELS.level0.map.some(r=>r.includes('K')),'key-room door is represented in collision map');
+{
+ const L=LEVELS.level0,W=L.map[0].length,H=L.map.length,k=L.keyPickups[0];
+ const inside=(x,y)=>x>=0&&y>=0&&x<W&&y<H;
+ const walk=(x,y)=>inside(x,y)&&!['#','P','D','K'].includes(L.map[y][x]);
+ const q=[[L.start.cx,L.start.cy]],seen=new Set([L.start.cy*W+L.start.cx]);
+ for(let i=0;i<q.length;i++){const[x,y]=q[i];for(const[nx,ny]of[[x+1,y],[x-1,y],[x,y+1],[x,y-1]]){const id=ny*W+nx;if(walk(nx,ny)&&!seen.has(id)){seen.add(id);q.push([nx,ny])}}}
+ assert.ok(seen.has(k.cy*W+k.cx), 'key pickup is reachable without opening key room');
+}
 for(let n=7;n<=30;n++){
  const L=LEVELS['level'+n],p=L.puzzles.find(q=>q.id==='level'+n+'_cipher');
  assert.ok(p&&p.type==='code'&&p.len===5&&p.door==='exit',`level${n}: five-digit cipher gates the exit`);
