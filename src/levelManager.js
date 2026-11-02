@@ -36,7 +36,7 @@ const Levels={defs:NRNH.LEVELS,scene:null,grp:null,lights:[],nl:5,panels:[],map:
  zone(x,z){const c=this.cell(x,z);return this.def.zone(c[0],c[1])},
  dimMul(){const d=this.def;return d&&d.dim&&this.st?Math.max(.2,1-d.dim*this.st.notes.length):1},
  off(z){const w=Game.world();return!!(w&&w.env&&w.env['off_'+z])},
- refresh(){const d=this.def,st=this.st;for(const id of['d1','d2','x1','exit'])this.open[id]=Rules.doorOpen(d,st,id,Game.world());if(d.safe||d.id==='glitchshop')this.open.exit=true;
+ refresh(){const d=this.def,st=this.st;for(const id of['d1','d2','x1','exit'])this.open[id]=Rules.doorOpen(d,st,id,Game.world());if(d.safe||d.id==='glitchshop')this.open.exit=true;if(d.keyRoom)this.open.keyRoom=!!st.keyRoomUnlocked;
   for(const id in this.dm)this.dm[id].forEach(m=>m.visible=!this.open[id]);
   this.nm.forEach((m,i)=>m.material.emissive.setHex(st.notes.includes(i)?0:0x555533));this.im.forEach((m,i)=>m.visible=!st.items.includes(i));this.coinMeshes.forEach((m,i)=>m.visible=!(st.coins||[]).includes(i))},
  setShadows(size){const on=size>0;this.lights.forEach((l,i)=>{l.castShadow=on&&i===0;if(on&&i===0){l.shadow.mapSize.set(size,size);if(l.shadow.map){l.shadow.map.dispose();l.shadow.map=null}}});
@@ -64,9 +64,9 @@ const Levels={defs:NRNH.LEVELS,scene:null,grp:null,lights:[],nl:5,panels:[],map:
   const fl=plane(ft,-Math.PI/2,0);fl.receiveShadow=true;g.add(fl);g.add(plane(ct,Math.PI/2,WH));
   // Repeated ceiling conduits create a more readable industrial silhouette without expensive extra lights.
   if(d.theme==='water'||d.theme==='red'){const pipeMat=new THREE.MeshStandardMaterial({color:d.theme==='water'?0x34474a:0x3d2523,metalness:.48,roughness:.56});const pipeGeo=new THREE.CylinderGeometry(.075,.075,2.7,8);for(let y=2;y<D-2;y+=4)for(let x=2;x<W-2;x+=5){if((m[y]||'')[x]!=='.')continue;const pipe=new THREE.Mesh(pipeGeo,pipeMat);pipe.rotation.z=Math.PI/2;pipe.position.set((x+.5)*CS,WH-.22,(y+.5)*CS);g.add(pipe)}}
-  const ws=[[],[],[]],floor=[],pil=[],des=[],dc={'1':[],'2':[],'3':[]};
+  const ws=[[],[],[]],floor=[],pil=[],des=[],dc={'1':[],'2':[],'3':[],'K':[]};
   m.forEach((r,y)=>[...r].forEach((c,x)=>{const cx=(x+.5)*CS,cz=(y+.5)*CS;
-   if(c==='#'){ws[Math.floor(Math.random()*3)].push([cx,cz]);return}if(c==='E')return;if(c==='1'||c==='2'||c==='3'){dc[c].push([cx,cz]);return}
+   if(c==='#'){ws[Math.floor(Math.random()*3)].push([cx,cz]);return}if(c==='E')return;if(c==='1'||c==='2'||c==='3'||c==='K'){dc[c].push([cx,cz]);return}
    floor.push([cx,cz]);if(c==='P')pil.push([cx,cz]);if(c==='D')des.push([cx,cz])}));
   // Surface details are generated only after floor cells exist (prevents temporal-dead-zone errors).
   if(d.theme==='water'||d.theme==='red'){const wetMat=new THREE.MeshStandardMaterial({color:d.theme==='water'?0x24454a:0x28100e,metalness:.22,roughness:.18,transparent:true,opacity:d.theme==='water'?.38:.2,depthWrite:false});const wetGeo=new THREE.CircleGeometry(1,20);const used=[];for(let i=0;i<Math.min(64,floor.length);i++){const q=floor[(i*37+11)%floor.length];if(!q||used.some(a=>Math.hypot(a[0]-q[0],a[1]-q[1])<2.4))continue;used.push(q);const wet=new THREE.Mesh(wetGeo,wetMat);wet.rotation.x=-Math.PI/2;wet.position.set(q[0],.018,q[1]);const sc=.35+((i*17)%100)/100*1.1;wet.scale.set(sc,sc*.65,sc);g.add(wet)}}
@@ -120,8 +120,8 @@ const Levels={defs:NRNH.LEVELS,scene:null,grp:null,lights:[],nl:5,panels:[],map:
   if(pts.length){const lensMat=new THREE.MeshStandardMaterial({color:0xf4f2d9,emissive:0xd6d2a1,emissiveIntensity:.48,roughness:.28,metalness:0});this.pI=inst(pg,lensMat,pts,WH-.006,false);pts.forEach((p,i)=>{this.pI.setColorAt(i,col.setRGB(.96,.97,.86));L.panels.push({z:d.zone(Math.floor(p[0]/CS),Math.floor(p[1]/CS)),x:p[0],pz:p[1],i,bad:Math.random()<.18,r:5+Math.random()*8,ph:Math.random()*9,f:1,d:0,u:false,hold:0})});this.pI.instanceColor.needsUpdate=true}
   // 문
   const doorM=new THREE.MeshLambertMaterial({color:0x2f4a35});
-  for(const id of['1','2','3']){const did=DCH[id];if(!dc[id].length)continue;this.dm[did]=dc[id].map(p=>{const b=new THREE.Mesh(new THREE.BoxGeometry(CS-.04,WH-.02,CS-.04),doorM);b.position.set(p[0],WH/2,p[1]);g.add(b);return b});
-   const q=dc[id][0];const sp=did==='x1';Interact.add({x:q[0],z:q[1],r:3.6,hide:()=>!sp&&L.open[did],label:()=>sp&&L.open[did]?'[E] 벌어진 틈 속으로':sp?'[E] 벽의 틈':'[E] 잠긴 문',act:()=>{if(sp&&L.open[did])Game.enterSpecial(d.doors[did].to);else{Aud.burst(300,.2,.4);UI.toast(d.doors[did].lockedMsg)}}})}
+  for(const id of['1','2','3','K']){const did=DCH[id];if(!dc[id].length)continue;this.dm[did]=dc[id].map(p=>{const b=new THREE.Mesh(new THREE.BoxGeometry(CS-.04,WH-.02,CS-.04),doorM);b.position.set(p[0],WH/2,p[1]);g.add(b);return b});
+   const q=dc[id][0];const sp=did==='x1';Interact.add({x:q[0],z:q[1],r:3.6,hide:()=>!sp&&L.open[did],label:()=>did==='keyRoom'?'[E] 열쇠방 문 열기':sp&&L.open[did]?'[E] 벌어진 틈 속으로':sp?'[E] 벽의 틈':'[E] 잠긴 문',act:()=>{if(did==='keyRoom'){if(st.hasLevel0Key){st.keyRoomUnlocked=true;L.refresh();Aud.burst(620,.12,.25);UI.toast('열쇠방이 열렸다! 숨겨진 방을 탐험해 봐.')}else{Aud.burst(300,.2,.4);UI.toast('열쇠가 필요하다. 주변의 어두운 통로를 찾아봐.')}}else if(sp&&L.open[did])Game.enterSpecial(d.doors[did].to);else{Aud.burst(300,.2,.4);UI.toast(d.doors[did].lockedMsg)}}})}
   const ex=d.exit,ez=(ex.cy0+ex.cy1+1)/2*CS,len=(ex.cy1-ex.cy0+1)*CS,ed=new THREE.Mesh(new THREE.BoxGeometry(.3,WH,len),doorM);ed.position.set((ex.cx+.6)*CS,WH/2,ez);g.add(ed);this.dm.exit=[ed];
   const gl=new THREE.Mesh(new THREE.PlaneGeometry(len,WH),new THREE.MeshBasicMaterial({color:0xfff6dd}));gl.rotation.y=-Math.PI/2;gl.position.set((ex.cx+.95)*CS,WH/2,ez);g.add(gl);
   const xp=Rules.exitPt(d);Interact.add({x:xp[0],z:xp[1],r:3.2,label:()=>L.open.exit?'[E] 출구로 나간다':'[E] 출구 (잠김)',act:()=>{if(L.open.exit){if(d.id==='glitchshop'||d.id==='sanctuary')Game.returnFromHub();else Game.exitLevel()}else{Aud.burst(300,.2,.4);UI.toast(d.doors.exit.lockedMsg)}}});
@@ -130,6 +130,16 @@ const Levels={defs:NRNH.LEVELS,scene:null,grp:null,lights:[],nl:5,panels:[],map:
    Interact.add({x:mm.position.x,z:mm.position.z,r:2,label:()=>'[E] 메모 #'+(i+1)+(st.notes.includes(i)?' 다시 읽기':' 읽기'),act:()=>Game.useNote(i)})});
   d.items.forEach((it,i)=>{const f=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,.4),new THREE.MeshLambertMaterial({color:0xddcc55,emissive:0x665500}));f.rotation.z=Math.PI/2;f.position.set((it.cx+.5)*CS,.12,(it.cy+.5)*CS);g.add(f);this.im[i]=f;
    Interact.add({x:f.position.x,z:f.position.z,r:2,hide:()=>st.items.includes(i),label:()=>'[E] 퓨즈 줍기',act:()=>Game.useItem(i)})});
+  // 열쇠방 열쇠: Level 0에서만 생성되며 저장 데이터에 수집 상태를 기록한다.
+  if(Array.isArray(d.keyPickups)){
+   if(!Array.isArray(st.keyPickups))st.keyPickups=[];
+   d.keyPickups.forEach((it,i)=>{const k=new THREE.Group();const ring=new THREE.Mesh(new THREE.TorusGeometry(.13,.035,8,16),new THREE.MeshStandardMaterial({color:0xf2c94c,metalness:.8,roughness:.25,emissive:0x5b4210}));ring.rotation.x=Math.PI/2;k.add(ring);const shaft=new THREE.Mesh(new THREE.BoxGeometry(.055,.055,.32),ring.material);shaft.position.z=-.18;k.add(shaft);k.position.set((it.cx+.5)*CS,.55,(it.cy+.5)*CS);g.add(k);
+    Interact.add({x:k.position.x,z:k.position.z,r:2,hide:()=>st.keyPickups.includes(it.id),label:()=>st.keyPickups.includes(it.id)?'':'[E] 오래된 열쇠 줍기',act:()=>{if(st.keyPickups.includes(it.id))return;st.keyPickups.push(it.id);st.hasLevel0Key=true;k.visible=false;Aud.paper();UI.toast('오래된 열쇠를 획득했다. 숨겨진 열쇠방 문을 열 수 있다!');L.refresh()}});
+   });
+  }
+  if(d.keyRoom&&st.keyRoomUnlocked&&!st.keyRoomNoteSeen){
+   Interact.add({x:(31.5)*CS,z:(6.5)*CS,r:2.2,label:()=>'[E] 숨겨진 기록 읽기',act:()=>{st.keyRoomNoteSeen=true;UI.panel('<h2>열쇠방 기록</h2><p>'+d.keyRoom.rewardNote+'</p><button id="keyRoomClose">닫기</button>');UI.$('keyRoomClose').onclick=()=>{UI.close();Game.state='play'}}});
+  }
   // 맵별 탐험 코인 6개. 수집 상태는 저장 슬롯에 기록한다.
   if(!Array.isArray(st.coins))st.coins=[];
   const coinCells=[];
