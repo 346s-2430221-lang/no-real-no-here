@@ -138,7 +138,7 @@ const Levels={defs:NRNH.LEVELS,scene:null,grp:null,lights:[],nl:5,panels:[],map:
    });
   }
   if(d.keyRoom&&st.keyRoomUnlocked&&!st.keyRoomNoteSeen){
-   Interact.add({x:(31.5)*CS,z:(6.5)*CS,r:2.2,label:()=>'[E] 숨겨진 기록 읽기',act:()=>{st.keyRoomNoteSeen=true;UI.panel('<h2>열쇠방 기록</h2><p>'+d.keyRoom.rewardNote+'</p><button id="keyRoomClose">닫기</button>');UI.$('keyRoomClose').onclick=()=>{UI.close();Game.state='play'}}});
+   Interact.add({x:(d.keyRoom.noteAt.cx+.5)*CS,z:(d.keyRoom.noteAt.cy+.5)*CS,r:2.2,label:()=>'[E] 숨겨진 기록 읽기',act:()=>{st.keyRoomNoteSeen=true;UI.panel('<h2>열쇠방 기록</h2><p>'+d.keyRoom.rewardNote+'</p><button id="keyRoomClose">닫기</button>');UI.$('keyRoomClose').onclick=()=>{UI.close();Game.state='play'}}});
   }
   // 맵별 탐험 코인 6개. 수집 상태는 저장 슬롯에 기록한다.
   if(!Array.isArray(st.coins))st.coins=[];
