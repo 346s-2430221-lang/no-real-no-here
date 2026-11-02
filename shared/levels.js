@@ -175,25 +175,34 @@ function makeLargeLevel(meta,idx){
      for(let x=x0;x<=x1;x++){if(x===gapA||x===gapB||reserved.has(y0*W+x))continue;gg.s(x,y0,'#')}
    }
  };
+ const layoutStyle=idx%7;
  centers.forEach((cx,j)=>{
    const top=j%2===0, y0=top?5:mid+4, y1=top?mid-4:H-6;
-   const vx=cx+(j%3===0?2:-1);
-   if(idx%5===0){ // city/suburb: rectangular room blocks with door-like breaks
+   // Each family uses a different floor-plan rhythm: room blocks, service lanes,
+   // pool basins, offset maze loops, institutional rooms, platforms, or open forest wings.
+   if(layoutStyle===0){ // city/suburbs: rectangular rooms with narrow door gaps
      addPartition(Math.min(W-4,cx+2),y0,y1,y1,true,Math.floor((y0+y1)/2),Math.floor((y0+y1)/2)+3);
      addPartition(cx-3,top?10:mid+10,cx+3,top?10:mid+10,false,cx-1,cx+2);
-   }else if(idx%5===1){ // utility / pipe maze: alternating narrow partitions
+   }else if(layoutStyle===1){ // utility / pipe maze: alternating narrow service lanes
      addPartition(Math.min(W-4,cx+1),y0,y1,y1,true,y0+3,y0+8);
      addPartition(cx-3,top?16:mid+13,cx+3,top?16:mid+13,false,cx,cx+2);
-   }else if(idx%5===2){ // poolrooms / flooded halls: large open basins with separated walkways
+   }else if(layoutStyle===2){ // poolrooms: wide basins separated by short, walkable connector gaps
      addPartition(cx-3,top?9:mid+9,cx+3,top?9:mid+9,false,cx-2,cx+2);
      addPartition(Math.min(W-4,cx+3),top?10:mid+9,top?10:mid+9,top?18:mid+17,true,top?14:mid+13);
-   }else if(idx%5===3){ // funhouse / maze: offset partitions create loops and false-looking dead ends
+   }else if(layoutStyle===3){ // funhouse / maze: offset partitions form loops and misleading dead ends
      addPartition(cx-2,y0,cx-2,y1,true,y0+2,y1-2);
      addPartition(cx+2,top?12:mid+12,cx+2,top?12:mid+12,true,top?12:mid+12);
      addPartition(cx-2,top?17:mid+15,cx+2,top?17:mid+15,false,cx,cx+1);
-   }else{ // institutional wings: rooms branching off long hallways
+   }else if(layoutStyle===4){ // school / hospital: repeated rooms opening into a long corridor
      addPartition(cx-3,top?11:mid+11,cx+3,top?11:mid+11,false,cx-1,cx+1);
      addPartition(Math.min(W-4,cx+3),y0,y1,y1,true,y0+4,y1-3);
+   }else if(layoutStyle===5){ // train station / warehouse: long platform walls and side access gaps
+     addPartition(Math.min(W-4,cx+1),y0,y1,y1,true,y0+5,y1-5);
+     addPartition(cx-4,top?14:mid+13,cx+4,top?14:mid+13,false,cx-1,cx+2);
+     addPartition(cx-3,top?19:mid+17,cx+3,top?19:mid+17,false,cx,cx+1);
+   }else{ // forest / open ruins: broad chambers with staggered short dividers
+     addPartition(cx-3,top?13:mid+13,cx+3,top?13:mid+13,false,cx-2,cx+1);
+     addPartition(Math.min(W-4,cx+4),top?8:mid+8,top?8:mid+8,top?18:mid+18,true,top?12:mid+13);
    }
  });
  // Restore solid borders and mark a real exit at the far east end.
