@@ -29,6 +29,41 @@ snow:{name:'서리바람 설원',walls:[...edgeWalls,[7,5,3,2],[15,11,2,5],[25,4
 desert:{name:'황금모래 사막',walls:[...edgeWalls,[6,8,4,2],[18,4,2,5],[27,15,5,2],[36,7,3,4],[45,25,4,3],[52,10,2,5]],spawn:[320,320]},
 swamp:{name:'안개늪지',walls:[...edgeWalls,[5,9,4,2],[14,5,3,4],[24,14,4,2],[33,6,2,5],[42,21,4,2],[52,12,3,5]],spawn:[320,320]}
 };
+let bgmEnabled=true,bgmTimer=null,bgmStep=0,bgmRegion='',bgmMaster=null;
+const BGM_TRACKS={
+ town:{tempo:520,scale:[0,3,5,7,10,12,10,7],root:220,wave:'sine',bass:110,volume:.025},
+ forest:{tempo:610,scale:[0,3,7,10,7,5,3,2],root:196,wave:'triangle',bass:98,volume:.022},
+ dungeon:{tempo:690,scale:[0,1,5,3,0,7,5,1],root:146.83,wave:'sine',bass:73.42,volume:.027},
+ farm:{tempo:570,scale:[0,4,7,9,7,4,2,4],root:246.94,wave:'sine',bass:123.47,volume:.022},
+ mine:{tempo:640,scale:[0,7,3,10,5,3,7,2],root:164.81,wave:'triangle',bass:82.41,volume:.023},
+ snow:{tempo:720,scale:[0,7,12,10,7,5,12,7],root:220,wave:'sine',bass:110,volume:.02},
+ desert:{tempo:560,scale:[0,1,5,7,8,7,5,1],root:185,wave:'triangle',bass:92.5,volume:.023},
+ swamp:{tempo:680,scale:[0,3,1,7,5,1,3,0],root:174.61,wave:'sine',bass:87.31,volume:.024}
+};
+function musicNote(freq,duration,wave,volume,when){
+ if(!audioContext||!bgmEnabled||!soundEnabled)return;
+ const o=audioContext.createOscillator(),g=audioContext.createGain(),f=audioContext.createBiquadFilter();
+ o.type=wave;o.frequency.setValueAtTime(freq,when);f.type='lowpass';f.frequency.value=wave==='triangle'?1000:1800;
+ g.gain.setValueAtTime(.0001,when);g.gain.exponentialRampToValueAtTime(Math.max(.0002,volume),when+.06);g.gain.exponentialRampToValueAtTime(.0001,when+duration);
+ o.connect(f);f.connect(g);g.connect(audioContext.destination);o.start(when);o.stop(when+duration+.03);
+}
+function bgmTick(){
+ if(!bgmEnabled||!soundEnabled||!audioContext)return;
+ const track=BGM_TRACKS[region]||BGM_TRACKS.town,step=bgmStep%track.scale.length,now=audioContext.currentTime;
+ const freq=track.root*Math.pow(2,track.scale[step]/12);
+ musicNote(freq,track.tempo/1000*.82,track.wave,track.volume,now);
+ if(step===0||step===4)musicNote(track.bass*(step===4?1.5:1),track.tempo/1000*1.5,'sine',track.volume*.8,now);
+ if(step===0)musicNote(track.root*.5,track.tempo/1000*7,'sine',track.volume*.38,now);
+ bgmStep++;
+}
+function startBGM(force=false){
+ if(!soundEnabled||!bgmEnabled||!audioContext)return;
+ if(audioContext.state==='suspended')audioContext.resume();
+ if(force||bgmRegion!==region){bgmRegion=region;bgmStep=0;if(bgmTimer){clearInterval(bgmTimer);bgmTimer=null}}
+ if(!bgmTimer){bgmTick();bgmTimer=setInterval(bgmTick,(BGM_TRACKS[region]||BGM_TRACKS.town).tempo)}
+}
+function stopBGM(){if(bgmTimer){clearInterval(bgmTimer);bgmTimer=null}}
+function syncBGM(){if(soundEnabled&&bgmEnabled&&audioContext)startBGM(true);else stopBGM()}
 let soundEnabled=true,audioContext=null;
 function playSound(kind='ui'){
  if(!soundEnabled)return;
@@ -48,12 +83,12 @@ function playSound(kind='ui'){
   if(['chest','heal','level'].includes(kind)){const o=audioContext.createOscillator(),g=audioContext.createGain();o.type='sine';o.frequency.value=freq*1.5;g.gain.setValueAtTime(0.0001,now);g.gain.exponentialRampToValueAtTime(0.035,now+0.02);g.gain.exponentialRampToValueAtTime(0.0001,now+duration*0.7);o.connect(g);g.connect(audioContext.destination);o.start(now);o.stop(now+duration);}
  }catch(_){}
 }
-document.getElementById('soundToggle').addEventListener('click',()=>{soundEnabled=!soundEnabled;const b=document.getElementById('soundToggle');b.textContent=soundEnabled?'🔊 사운드 켜짐':'🔇 사운드 꺼짐';b.setAttribute('aria-pressed',String(soundEnabled));if(soundEnabled)playSound('level');});
-document.addEventListener('pointerdown',e=>{if(e.target.closest('button')&&e.target.id!=='soundToggle')playSound('ui')},{passive:true});
+document.getElementById('soundToggle').addEventListener('click',()=>{soundEnabled=!soundEnabled;const b=document.getElementById('soundToggle');b.textContent=soundEnabled?'🔊 사운드 켜짐':'🔇 사운드 꺼짐';b.setAttribute('aria-pressed',String(soundEnabled));if(soundEnabled){playSound('level');if(!audioContext){const AC=window.AudioContext||window.webkitAudioContext;if(AC)audioContext=new AC()}syncBGM()}else stopBGM();});
+document.addEventListener('pointerdown',e=>{if(!audioContext){const AC=window.AudioContext||window.webkitAudioContext;if(AC)audioContext=new AC()}if(audioContext&&audioContext.state==='suspended')audioContext.resume();if(soundEnabled&&bgmEnabled)startBGM();if(e.target.closest('button')&&e.target.id!=='soundToggle')playSound('ui')},{passive:true});
 function say(s){const t=document.getElementById('toast');t.textContent=s;t.style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.style.display='none',2100)}
 function makeMon(x,y,type='slime'){return {x,y,type,hp:type==='boss'?18:type==='bat'?2:type==='skeleton'?4:2,max:type==='boss'?18:type==='skeleton'?4:2,alive:true,hit:0,cd:0}}
-function travelTo(r){playSound('travel');if(portalBusy||!maps[r])return;portalBusy=true;keys.clear();setupRegion(r);mpSend({t:'rpg-region',region});portalBusy=false}
-function setupRegion(r){if(!maps[r])r='town';region=r;let sp=maps[r].spawn;player.x=sp[0];player.y=sp[1];player.inv=500;chests=[];particles=[];if(r==='mine'){monsters=[];chests=[];if(!mineNodes.length)mineNodes=[{x:5,y:4,type:'stone',hp:3},{x:7,y:8,type:'copper',hp:3},{x:12,y:4,type:'iron',hp:4},{x:16,y:6,type:'crystal',hp:5},{x:6,y:9,type:'stone',hp:3},{x:13,y:9,type:'copper',hp:3},{x:17,y:3,type:'iron',hp:4},{x:24,y:5,type:'crystal',hp:5},{x:29,y:18,type:'iron',hp:4},{x:34,y:8,type:'crystal',hp:5},{x:21,y:21,type:'copper',hp:3}]}else if(r==='farm'){monsters=[];chests=[]}else if(r==='town'){monsters=[];chests=[{x:550,y:80,open:true},{x:850,y:420,open:true},{x:1050,y:670,open:true}]}else if(r==='forest'){monsters=[];for(let i=0;i<24;i++){const x=150+((i*197+83)%1820),y=130+((i*131+47)%1820);if(!blocked(x,y))monsters.push(makeMon(x,y,i%7===0?'skeleton':i%4===0?'bat':'slime'))}chests=[{x:560,y:75,open:false},{x:910,y:510,open:false},{x:1100,y:700,open:false},{x:360,y:650,open:false}]}else if(r==='dungeon'){monsters=[];for(let i=0;i<34;i++){const x=140+((i*181+61)%1820),y=130+((i*113+91)%1820);if(!blocked(x,y))monsters.push(makeMon(x,y,i===33?'boss':i%3===0?'skeleton':i%2===0?'bat':'slime'))}chests=[{x:560,y:340,open:false},{x:85,y:335,open:false},{x:890,y:540,open:false},{x:1500,y:1000,open:false},{x:430,y:650,open:false},{x:1740,y:700,open:false}]}else if(['snow','desert','swamp'].includes(r)){monsters=[];const count=r==='snow'?30:r==='desert'?32:34;for(let i=0;i<count;i++){const x=100+((i*197+143)%1820),y=100+((i*137+89)%1820);if(!blocked(x,y))monsters.push(makeMon(x,y,r==='snow'?(i%5===0?'skeleton':i%3===0?'bat':'slime'):r==='desert'?(i%4===0?'skeleton':i%3===0?'bat':'slime'):(i%3===0?'skeleton':i%2===0?'bat':'slime')))}chests=[{x:560,y:340,open:false},{x:1250,y:760,open:false},{x:1640,y:1050,open:false},{x:430,y:930,open:false}]}else{monsters=[];chests=[]}updateHUD();say('지역 이동: '+maps[r].name)}
+function travelTo(r){playSound('travel');if(portalBusy||!maps[r])return;portalBusy=true;keys.clear();setupRegion(r);syncBGM();mpSend({t:'rpg-region',region});portalBusy=false}
+function setupRegion(r){if(!maps[r])r='town';region=r;syncBGM();let sp=maps[r].spawn;player.x=sp[0];player.y=sp[1];player.inv=500;chests=[];particles=[];if(r==='mine'){monsters=[];chests=[];if(!mineNodes.length)mineNodes=[{x:5,y:4,type:'stone',hp:3},{x:7,y:8,type:'copper',hp:3},{x:12,y:4,type:'iron',hp:4},{x:16,y:6,type:'crystal',hp:5},{x:6,y:9,type:'stone',hp:3},{x:13,y:9,type:'copper',hp:3},{x:17,y:3,type:'iron',hp:4},{x:24,y:5,type:'crystal',hp:5},{x:29,y:18,type:'iron',hp:4},{x:34,y:8,type:'crystal',hp:5},{x:21,y:21,type:'copper',hp:3}]}else if(r==='farm'){monsters=[];chests=[]}else if(r==='town'){monsters=[];chests=[{x:550,y:80,open:true},{x:850,y:420,open:true},{x:1050,y:670,open:true}]}else if(r==='forest'){monsters=[];for(let i=0;i<24;i++){const x=150+((i*197+83)%1820),y=130+((i*131+47)%1820);if(!blocked(x,y))monsters.push(makeMon(x,y,i%7===0?'skeleton':i%4===0?'bat':'slime'))}chests=[{x:560,y:75,open:false},{x:910,y:510,open:false},{x:1100,y:700,open:false},{x:360,y:650,open:false}]}else if(r==='dungeon'){monsters=[];for(let i=0;i<34;i++){const x=140+((i*181+61)%1820),y=130+((i*113+91)%1820);if(!blocked(x,y))monsters.push(makeMon(x,y,i===33?'boss':i%3===0?'skeleton':i%2===0?'bat':'slime'))}chests=[{x:560,y:340,open:false},{x:85,y:335,open:false},{x:890,y:540,open:false},{x:1500,y:1000,open:false},{x:430,y:650,open:false},{x:1740,y:700,open:false}]}else if(['snow','desert','swamp'].includes(r)){monsters=[];const count=r==='snow'?30:r==='desert'?32:34;for(let i=0;i<count;i++){const x=100+((i*197+143)%1820),y=100+((i*137+89)%1820);if(!blocked(x,y))monsters.push(makeMon(x,y,r==='snow'?(i%5===0?'skeleton':i%3===0?'bat':'slime'):r==='desert'?(i%4===0?'skeleton':i%3===0?'bat':'slime'):(i%3===0?'skeleton':i%2===0?'bat':'slime')))}chests=[{x:560,y:340,open:false},{x:1250,y:760,open:false},{x:1640,y:1050,open:false},{x:430,y:930,open:false}]}else{monsters=[];chests=[]}updateHUD();say('지역 이동: '+maps[r].name)}
 function start(){player={x:320,y:230,dir:'down',hp:8,max:8,inv:0};gold=10;potions=2;level=1;xp=0;questKills=0;bossDead=false;gear.weapon=0;gear.armor=0;gameOver=false;setupRegion('town')}
 function rect(x,y,w,h,col){ctx.fillStyle=col;ctx.fillRect(Math.round(x),Math.round(y),w,h)}
 function blocked(x,y){let tx=Math.floor(x/T),ty=Math.floor(y/T);if(tx<1||ty<1||tx>=WORLD_COLS-1||ty>=WORLD_ROWS-1)return true;if(maps[region].walls.some(([wx,wy,ww,hh])=>tx>=wx&&tx<wx+ww&&ty>=wy&&ty<wy+hh))return true;if(region==='farm'&&builds.some(b=>(b.x===tx&&b.y===ty&&(b.type==='wall'||(b.type==='door'||b.type==='trapdoor')&&!b.powered||(b.type==='piston'||b.type==='sticky')&&b.powered)||b.type==='piston'&&b.powered&&b.x+1===tx&&b.y===ty)))return true;return false}
