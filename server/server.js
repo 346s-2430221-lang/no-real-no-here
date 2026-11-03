@@ -4,11 +4,17 @@ const {WebSocketServer}=require('ws');const {Rules,LEVELS}=require('../shared/le
 const PORT=+process.env.PORT||8080,MAXV=+process.env.MAX_SPEED||7,ROOT=path.join(__dirname,'..'),MAXP=+process.env.MAX_PLAYERS||4;
 const MIME={'.html':'text/html;charset=utf-8','.css':'text/css','.js':'text/javascript','.md':'text/plain;charset=utf-8'};
 const ALLOW=/^(index\.html|style\.css|src\/[\w.]+\.js|libs\/[\w.]+\.js|shared\/[\w.]+\.js)$/;
-const server=http.createServer((req,res)=>{let u=decodeURIComponent((req.url||'/').split('?')[0]);if(u==='/health'){res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});return res.end(JSON.stringify({ok:true,service:'no-real-no-here',rooms:rooms.size,uptime:Math.floor(process.uptime())}));}if(u==='/')u='/index.html';const rel=u.replace(/^\/+/,'');
+const server=http.createServer((req,res)=>{let u=decodeURIComponent((req.url||'/').split('?')[0]);if(u==='/health'){res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});return res.end(JSON.stringify({ok:true,service:'no-real-no-here',rooms:rooms.size,rpgRooms:rpgRooms.size,uptime:Math.floor(process.uptime())}));}if(u==='/')u='/index.html';const rel=u.replace(/^\/+/,'');
  if(!ALLOW.test(rel)){res.writeHead(404);return res.end('not found')}fs.readFile(path.join(ROOT,rel),(e,b)=>{if(e){res.writeHead(404);return res.end('not found')}res.writeHead(200,{'Content-Type':MIME[path.extname(rel)]||'application/octet-stream'});res.end(b)})});
 const wss=new WebSocketServer({server,maxPayload:2048});
-const rooms=new Map(),A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let nid=1;
-const newCode=()=>{for(;;){const b=crypto.randomBytes(6);let s='';for(const x of b)s+=A[x%32];if(!rooms.has(s))return s}};
+const rooms=new Map(),rpgRooms=new Map(),A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let nid=1,rpgNid=1;
+const newCode=()=>{for(;;){const b=crypto.randomBytes(6);let s='';for(const x of b)s+=A[x%32];if(!rooms.has(s)&&!rpgRooms.has(s))return s}};
+const rpgClean=s=>String(s==null?'':s).replace(/[<>&\"'`\\u0000-\\u001f]/g,'').trim().slice(0,12)||'모험가';
+const rpgPub=p=>({id:p.id,name:p.name,x:p.x,y:p.y,region:p.region});
+const rpgState=r=>({t:'rpg-state',code:r.code,players:[...r.players.values()].map(rpgPub)});
+const rpgSend=(ws,o)=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify(o))};
+const rpgAll=(r,o,except)=>{for(const p of r.players.values())if(p.id!==except)rpgSend(p.ws,o)};
+const rpgLobby=r=>rpgState(r);
 const send=(ws,o)=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify(o))};
 const bc=(r,o,ex)=>{for(const p of r.players.values())if(p.ws&&p.id!==ex)send(p.ws,o)};
 const clean=s=>String(s==null?'':s).replace(/[<>&"'`\u0000-\u001f]/g,'').trim().slice(0,12)||'Player';
@@ -28,12 +34,27 @@ wss.on('connection',ws=>{let room=null,pl=null;ws.on('error',()=>{});
  ws.on('message',buf=>{let m;try{m=JSON.parse(buf.toString())}catch(e){return}if(!m||typeof m!=='object'||typeof m.t!=='string')return;const now=Date.now();
   if(pl){pl.bucket=Math.min(60,pl.bucket+(now-pl.bt)/1000*40);pl.bt=now;if(--pl.bucket<0)return}
   if(!pl){ // 방 입장 전에 허용되는 메시지
+   if(m.t==='rpg-create'||m.t==='rpg-join'){
+    let r;
+    if(m.t==='rpg-create'){r={code:newCode(),players:new Map()};rpgRooms.set(r.code,r)}
+    else {const code=typeof m.code==='string'?m.code.trim().toUpperCase():'';r=rpgRooms.get(code);if(!r)return send(ws,{t:'rpg-error',msg:'방 코드가 틀렸어. 다시 확인해 줘!'});if(r.players.size>=8)return send(ws,{t:'rpg-error',msg:'방이 가득 찼어! 최대 8명이야.'})}
+    room=r;pl={game:'rpg',id:'r'+(rpgNid++),name:rpgClean(m.name),ws,x:320,y:230,region:'town',bucket:60,bt:now};r.players.set(pl.id,pl);send(ws,{t:'rpg-joined',you:pl.id,code:r.code,players:[...r.players.values()].map(rpgPub)});rpgAll(r,{t:'rpg-player-joined',player:rpgPub(pl)},pl.id);return;
+   }
    if(m.t==='create'){room={code:newCode(),level:'level0',states:{},players:new Map(),host:null,dead:0,started:false};rooms.set(room.code,room);ensure(room,'level0');pl=addPlayer(room,ws,m.name);send(ws,joined(room,pl));send(ws,lobby(room))}
    else if(m.t==='join'){const r=typeof m.code==='string'&&/^[A-Z2-9]{6}$/.test(m.code)&&rooms.get(m.code);if(!r)return send(ws,{t:'err',msg:'잘못된 방 코드입니다'});
     if(r.players.size>=MAXP)return send(ws,{t:'err',msg:'방이 가득 찼습니다 (최대 '+MAXP+'명)'});room=r;pl=addPlayer(r,ws,m.name);send(ws,joined(r,pl));bc(r,{t:'pjoin',p:{...pub(pl),host:false}},pl.id);lobbyAll(r)}
    else if(m.t==='rejoin'){const r=typeof m.code==='string'&&rooms.get(m.code),p=r&&[...r.players.values()].find(q=>typeof m.token==='string'&&q.token===m.token);
     if(!p)return send(ws,{t:'err',msg:'재접속할 수 없습니다 (방이 사라졌거나 시간이 지남)'});if(p.ws&&p.ws!==ws)try{p.ws.close()}catch(e){}room=r;pl=p;p.ws=ws;p.dc=0;send(ws,joined(r,p,true));bc(r,{t:'pstate',id:p.id,online:true},p.id);lobbyAll(r)}
    return}
+  if(pl.game==='rpg'){
+   switch(m.t){
+    case'rpg-pos':{const x=Number(m.x),y=Number(m.y),region=typeof m.region==='string'&&['town','forest','dungeon'].includes(m.region)?m.region:pl.region;if(!Number.isFinite(x)||!Number.isFinite(y)||x<24||x>616||y<24||y>376)return;const dt=Math.min(1000,Math.max(50,now-pl.pt));if(Math.hypot(x-pl.x,y-pl.y)>260*dt/1000+22)return;pl.x=x;pl.y=y;pl.region=region;pl.pt=now;rpgAll(room,{t:'rpg-pos',player:rpgPub(pl)},pl.id);break}
+    case'rpg-region':{if(!['town','forest','dungeon'].includes(m.region))return;pl.region=m.region;rpgAll(room,{t:'rpg-region',id:pl.id,region:pl.region},pl.id);break}
+    case'rpg-leave':{room.players.delete(pl.id);rpgAll(room,{t:'rpg-player-left',id:pl.id});if(!room.players.size)rpgRooms.delete(room.code);room=null;pl=null;break}
+    case'rpg-chat':{if(typeof m.text!=='string')return;const text=m.text.replace(/[\\u0000-\\u001f]/g,' ').trim().slice(0,120);if(text)for(const p of room.players.values())rpgSend(p.ws,{t:'rpg-chat',name:pl.name,text});break}
+   }
+   return;
+  }
   const L=LV(room),st=ST(room);
   switch(m.t){
    case'ready':{if(room.started)return send(ws,{t:'err',msg:'게임이 이미 시작되었습니다'});pl.ready=!!m.ready;lobbyAll(room);break}
@@ -57,7 +78,7 @@ wss.on('connection',ws=>{let room=null,pl=null;ws.on('error',()=>{});
    case'exit':{if(!Rules.doorOpen(L,st,'exit')||dist(pl,Rules.exitPt(L))>5)return;if(!L.next)return bc(room,{t:'end'});
     room.level=L.next;ensure(room,room.level);for(const q of room.players.values())spawn(room,q);bc(room,{t:'level',id:room.level,state:view(room)});break}
    case'leave':removePlayer(room,pl);room=null;pl=null;break}});
- ws.on('close',()=>{if(room&&pl&&pl.ws===ws){pl.ws=null;pl.dc=Date.now();bc(room,{t:'pstate',id:pl.id,online:false});if(!room.started)lobbyAll(room)}})});
+ ws.on('close',()=>{if(room&&pl&&pl.ws===ws){if(pl.game==='rpg'){room.players.delete(pl.id);rpgAll(room,{t:'rpg-player-left',id:pl.id});if(!room.players.size)rpgRooms.delete(room.code);return}pl.ws=null;pl.dc=Date.now();bc(room,{t:'pstate',id:pl.id,online:false});if(!room.started)lobbyAll(room)}})});
 setInterval(()=>{for(const r of rooms.values()){const ch=[];for(const p of r.players.values())if(p.dirty){p.dirty=false;ch.push({id:p.id,x:+p.x.toFixed(2),z:+p.z.toFixed(2),yaw:+p.yaw.toFixed(2)})}if(ch.length)bc(r,{t:'pos',p:ch})}},100);
 setInterval(()=>{const now=Date.now();for(const r of [...rooms.values()])for(const p of [...r.players.values()])if(!p.ws&&p.dc&&now-p.dc>30000)removePlayer(r,p)},5000);
 if(require.main===module)server.listen(PORT,'0.0.0.0',()=>console.log('NO REAL NO HERE server on :'+PORT));
