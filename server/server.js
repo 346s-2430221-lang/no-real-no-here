@@ -10,7 +10,7 @@ const wss=new WebSocketServer({server,maxPayload:2048});
 const rooms=new Map(),rpgRooms=new Map(),A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let nid=1,rpgNid=1;
 const newCode=()=>{for(;;){const b=crypto.randomBytes(6);let s='';for(const x of b)s+=A[x%32];if(!rooms.has(s)&&!rpgRooms.has(s))return s}};
 const rpgClean=s=>String(s==null?'':s).replace(/[<>&\"']/g,'').replace(/[\x00-\x1f]/g,'').trim().slice(0,12)||'모험가';
-const rpgPub=p=>({id:p.id,name:p.name,x:p.x,y:p.y,region:p.region});
+const rpgPub=p=>({id:p.id,name:p.name,x:p.x,y:p.y,region:p.region,avatar:p.avatar});
 const rpgHp=()=>({forest:Array(24).fill(2),dungeon:Array.from({length:34},(_,i)=>i===33?18:i%3===0?4:2),snow:Array.from({length:30},(_,i)=>i%5===0?4:2),desert:Array.from({length:32},(_,i)=>i%4===0?4:2),swamp:Array.from({length:34},(_,i)=>i%3===0?4:2)});
 const rpgChests=()=>({forest:[false,false,false,false],dungeon:[false,false,false,false,false,false],snow:[false,false,false,false],desert:[false,false,false,false],swamp:[false,false,false,false]});
 const rpgWorld=r=>r.world;
@@ -44,7 +44,7 @@ wss.on('connection',ws=>{let room=null,pl=null;ws.on('error',()=>{});
     let r;
     if(m.t==='rpg-create'){r={code:newCode(),name:rpgClean(m.serverName||'별빛 모험 서버'),isPublic:m.public===true,players:new Map(),world:{hp:rpgHp(),dead:{forest:[],dungeon:[]},chests:rpgChests(),life:{plots:{},seeds:5,lifeDay:1,builds:[]}}};rpgRooms.set(r.code,r)}
     else {const code=typeof m.code==='string'?m.code.trim().toUpperCase():'';r=rpgRooms.get(code);if(!r)return send(ws,{t:'rpg-error',msg:'방 코드가 틀렸어. 다시 확인해 줘!'});if(r.players.size>=MAX_RPG_PLAYERS)return send(ws,{t:'rpg-error',msg:'서버가 가득 찼어! 최대 24명이야.'})}
-    room=r;pl={game:'rpg',id:'r'+(rpgNid++),name:rpgClean(m.name),ws,x:320,y:230,region:'town',pt:now,bucket:60,bt:now};r.players.set(pl.id,pl);send(ws,{t:'rpg-joined',you:pl.id,code:r.code,players:[...r.players.values()].map(rpgPub),world:r.world});rpgAll(r,{t:'rpg-player-joined',player:rpgPub(pl)},pl.id);rpgBroadcastPublicList();return;
+    room=r;pl={game:'rpg',id:'r'+(rpgNid++),name:rpgClean(m.name),avatar:Array.isArray(m.avatar)&&m.avatar.length===192?m.avatar.map(c=>typeof c==='string'&&/^#[0-9a-fA-F]{6}$/.test(c)?c:'').slice(0,192):null,ws,x:320,y:230,region:'town',pt:now,bucket:60,bt:now};r.players.set(pl.id,pl);send(ws,{t:'rpg-joined',you:pl.id,code:r.code,players:[...r.players.values()].map(rpgPub),world:r.world});rpgAll(r,{t:'rpg-player-joined',player:rpgPub(pl)},pl.id);rpgBroadcastPublicList();return;
    }
    if(m.t==='create'){room={code:newCode(),level:'level0',states:{},players:new Map(),host:null,dead:0,started:false};rooms.set(room.code,room);ensure(room,'level0');pl=addPlayer(room,ws,m.name);send(ws,joined(room,pl));send(ws,lobby(room))}
    else if(m.t==='join'){const r=typeof m.code==='string'&&/^[A-Z2-9]{6}$/.test(m.code)&&rooms.get(m.code);if(!r)return send(ws,{t:'err',msg:'잘못된 방 코드입니다'});
@@ -89,7 +89,7 @@ wss.on('connection',ws=>{let room=null,pl=null;ws.on('error',()=>{});
     room.level=L.next;ensure(room,room.level);for(const q of room.players.values())spawn(room,q);bc(room,{t:'level',id:room.level,state:view(room)});break}
    case'leave':removePlayer(room,pl);room=null;pl=null;break}});
  ws.on('close',()=>{if(room&&pl&&pl.ws===ws){if(pl.game==='rpg'){room.players.delete(pl.id);rpgAll(room,{t:'rpg-player-left',id:pl.id});if(!room.players.size)rpgRooms.delete(room.code);rpgBroadcastPublicList();return}pl.ws=null;pl.dc=Date.now();bc(room,{t:'pstate',id:pl.id,online:false});if(!room.started)lobbyAll(room)}})});
-setInterval(()=>{for(const r of rpgRooms.values()){r.world.hp=rpgHp();r.world.dead={forest:[],dungeon:[],snow:[],desert:[],swamp:[]};r.world.chests=rpgChests();rpgAll(r,{t:'rpg-reset',world:r.world});}for(const r of rooms.values()){const ch=[];for(const p of r.players.values())if(p.dirty){p.dirty=false;ch.push({id:p.id,x:+p.x.toFixed(2),z:+p.z.toFixed(2),yaw:+p.yaw.toFixed(2)})}if(ch.length)bc(r,{t:'pos',p:ch})}},100);
-setInterval(()=>{const now=Date.now();for(const r of [...rooms.values()])for(const p of [...r.players.values()])if(!p.ws&&p.dc&&now-p.dc>30000)removePlayer(r,p)},5000);
+setInterval(()=>{for(const r of rooms.values()){const ch=[];for(const p of r.players.values())if(p.dirty){p.dirty=false;ch.push({id:p.id,x:+p.x.toFixed(2),z:+p.z.toFixed(2),yaw:+p.yaw.toFixed(2)})}if(ch.length)bc(r,{t:'pos',p:ch})}},100);
+setInterval(()=>{for(const r of rpgRooms.values()){r.world.hp=rpgHp();r.world.dead={forest:[],dungeon:[],snow:[],desert:[],swamp:[]};r.world.chests=rpgChests();rpgAll(r,{t:'rpg-reset',world:r.world});}for(const r of [...rooms.values()])for(const p of [...r.players.values()])if(!p.ws&&p.dc&&now-p.dc>30000)removePlayer(r,p)},5000);
 if(require.main===module)server.listen(PORT,'0.0.0.0',()=>console.log('NO REAL NO HERE server on :'+PORT));
 module.exports={server,wss,rooms};
