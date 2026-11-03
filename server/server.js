@@ -12,6 +12,7 @@ const newCode=()=>{for(;;){const b=crypto.randomBytes(6);let s='';for(const x of
 const rpgClean=s=>String(s==null?'':s).replace(/[<>&\"']/g,'').replace(/[\x00-\x1f]/g,'').trim().slice(0,12)||'모험가';
 const rpgPub=p=>({id:p.id,name:p.name,x:p.x,y:p.y,region:p.region});
 const rpgHp=()=>({forest:[2,2,2,2,2],dungeon:[4,2,4,2,18]});
+const rpgChests=()=>({forest:[false],dungeon:[false,false]});
 const rpgWorld=r=>r.world;
 const rpgState=r=>({t:'rpg-state',code:r.code,players:[...r.players.values()].map(rpgPub),world:r.world});
 const rpgSend=(ws,o)=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify(o))};
@@ -40,7 +41,7 @@ wss.on('connection',ws=>{let room=null,pl=null;ws.on('error',()=>{});
   if(!pl){ // 방 입장 전에 허용되는 메시지
    if(m.t==='rpg-create'||m.t==='rpg-join'){
     let r;
-    if(m.t==='rpg-create'){r={code:newCode(),name:rpgClean(m.serverName||'별빛 모험 서버'),isPublic:m.public===true,players:new Map(),world:{hp:rpgHp(),dead:{forest:[],dungeon:[]}}};rpgRooms.set(r.code,r)}
+    if(m.t==='rpg-create'){r={code:newCode(),name:rpgClean(m.serverName||'별빛 모험 서버'),isPublic:m.public===true,players:new Map(),world:{hp:rpgHp(),dead:{forest:[],dungeon:[]},chests:rpgChests()}};rpgRooms.set(r.code,r)}
     else {const code=typeof m.code==='string'?m.code.trim().toUpperCase():'';r=rpgRooms.get(code);if(!r)return send(ws,{t:'rpg-error',msg:'방 코드가 틀렸어. 다시 확인해 줘!'});if(r.players.size>=MAX_RPG_PLAYERS)return send(ws,{t:'rpg-error',msg:'서버가 가득 찼어! 최대 24명이야.'})}
     room=r;pl={game:'rpg',id:'r'+(rpgNid++),name:rpgClean(m.name),ws,x:320,y:230,region:'town',pt:now,bucket:60,bt:now};r.players.set(pl.id,pl);send(ws,{t:'rpg-joined',you:pl.id,code:r.code,players:[...r.players.values()].map(rpgPub),world:r.world});rpgAll(r,{t:'rpg-player-joined',player:rpgPub(pl)},pl.id);rpgBroadcastPublicList();return;
    }
@@ -52,8 +53,10 @@ wss.on('connection',ws=>{let room=null,pl=null;ws.on('error',()=>{});
    return}
   if(pl.game==='rpg'){
    switch(m.t){
+    case'rpg-server-list':{rpgSend(ws,{t:'rpg-server-list',servers:rpgPublicList()});break}
     case'rpg-pos':{const x=Number(m.x),y=Number(m.y),region=typeof m.region==='string'&&['town','forest','dungeon'].includes(m.region)?m.region:pl.region;if(!Number.isFinite(x)||!Number.isFinite(y)||x<24||x>616||y<24||y>376)return;const dt=Math.min(1000,Math.max(50,now-pl.pt));if(Math.hypot(x-pl.x,y-pl.y)>260*dt/1000+22)return;pl.x=x;pl.y=y;pl.region=region;pl.pt=now;rpgAll(room,{t:'rpg-pos',player:rpgPub(pl)},pl.id);break}
     case'rpg-region':{if(!['town','forest','dungeon'].includes(m.region))return;pl.region=m.region;const sp={town:[320,230],forest:[90,210],dungeon:[65,200]}[m.region];pl.x=sp[0];pl.y=sp[1];pl.pt=now;rpgAll(room,{t:'rpg-region',id:pl.id,region:pl.region},pl.id);rpgAll(room,{t:'rpg-pos',player:rpgPub(pl)},pl.id);rpgSend(ws,{t:'rpg-world',world:room.world});break}
+    case'rpg-chest':{const region=m.region,index=m.index;if(!['forest','dungeon'].includes(region)||pl.region!==region||!Number.isInteger(index)||index<0||index>=(room.world.chests[region]||[]).length)return;const list=room.world.chests[region];if(list[index])return;rpgAll(room,{t:'rpg-chest-state',region,index,open:true,by:pl.id});rpgSend(ws,{t:'rpg-chest-state',region,index,open:true,by:pl.id});list[index]=true;break}
     case'rpg-hit':{const region=m.region,index=m.index,damage=Number(m.damage);if(!['forest','dungeon'].includes(region)||pl.region!==region||!Number.isInteger(index)||index<0||index>=room.world.hp[region].length||!Number.isFinite(damage))return;const hp=room.world.hp[region];if(hp[index]<=0)return;const dealt=Math.max(1,Math.min(8,Math.floor(damage)));hp[index]=Math.max(0,hp[index]-dealt);if(hp[index]===0&&!room.world.dead[region].includes(index))room.world.dead[region].push(index);rpgAll(room,{t:'rpg-monster-state',region,index,hp:hp[index],alive:hp[index]>0,by:pl.id,world:room.world});rpgSend(ws,{t:'rpg-monster-state',region,index,hp:hp[index],alive:hp[index]>0,by:pl.id,world:room.world});break}
     case'rpg-leave':{room.players.delete(pl.id);rpgAll(room,{t:'rpg-player-left',id:pl.id});if(!room.players.size)rpgRooms.delete(room.code);room=null;pl=null;break}
     case'rpg-chat':{if(typeof m.text!=='string')return;const text=m.text.replace(/[\x00-\x1f]/g,' ').trim().slice(0,120);if(text)for(const p of room.players.values())rpgSend(p.ws,{t:'rpg-chat',name:pl.name,text});break}
