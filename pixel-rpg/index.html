@@ -58,7 +58,7 @@ function bgmTick(){
  // Soft chord pad gives each region a fuller, dreamy RPG soundtrack.
  if(step%4===0){
   const chord=[0,3,7];const quality=(region==='farm'||region==='town')?[0,4,7]:chord;
-  quality.forEach((semi,j)=>musicNote(track.root*.5*Math.pow(2/semi?Math.pow(2,semi/12):1,1),beat*3.7,'sine',track.volume*.19,now));
+  quality.forEach((semi,j)=>musicNote(track.root*.5*Math.pow(2,semi/12),beat*3.7,'sine',track.volume*.19,now));
  }
  // Warm bass pulse and a light, bell-like arpeggio.
  if(step%4===0||step%4===2)musicNote(track.bass*(step%4===2?1.5:1),beat*1.7,'sine',track.volume*.72,now);
