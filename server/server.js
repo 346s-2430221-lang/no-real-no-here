@@ -42,7 +42,7 @@ wss.on('connection',ws=>{let room=null,pl=null;ws.on('error',()=>{});
    if(m.t==='rpg-server-list'){return send(ws,{t:'rpg-server-list',servers:rpgPublicList()})}
    if(m.t==='rpg-create'||m.t==='rpg-join'){
     let r;
-    if(m.t==='rpg-create'){r={code:newCode(),name:rpgClean(m.serverName||'별빛 모험 서버'),isPublic:m.public===true,players:new Map(),world:{hp:rpgHp(),dead:{forest:[],dungeon:[]},chests:rpgChests(),life:{plots:{},seeds:5,lifeDay:1,builds:[]}}};rpgRooms.set(r.code,r)}
+    if(m.t==='rpg-create'){r={code:newCode(),name:rpgClean(m.serverName||'별빛 모험 서버'),isPublic:m.public===true,players:new Map(),world:{hp:rpgHp(),dead:{forest:[],dungeon:[],snow:[],desert:[],swamp:[]},chests:rpgChests(),life:{plots:{},seeds:5,lifeDay:1,builds:[]}}};rpgRooms.set(r.code,r)}
     else {const code=typeof m.code==='string'?m.code.trim().toUpperCase():'';r=rpgRooms.get(code);if(!r)return send(ws,{t:'rpg-error',msg:'방 코드가 틀렸어. 다시 확인해 줘!'});if(r.players.size>=MAX_RPG_PLAYERS)return send(ws,{t:'rpg-error',msg:'서버가 가득 찼어! 최대 24명이야.'})}
     room=r;pl={game:'rpg',id:'r'+(rpgNid++),name:rpgClean(m.name),avatar:Array.isArray(m.avatar)&&m.avatar.length===192?m.avatar.map(c=>typeof c==='string'&&/^#[0-9a-fA-F]{6}$/.test(c)?c:'').slice(0,192):null,ws,x:320,y:230,region:'town',pt:now,bucket:60,bt:now};r.players.set(pl.id,pl);send(ws,{t:'rpg-joined',you:pl.id,code:r.code,players:[...r.players.values()].map(rpgPub),world:r.world});rpgAll(r,{t:'rpg-player-joined',player:rpgPub(pl)},pl.id);rpgBroadcastPublicList();return;
    }
