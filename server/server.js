@@ -9,7 +9,7 @@ const server=http.createServer((req,res)=>{let u=decodeURIComponent((req.url||'/
 const wss=new WebSocketServer({server,maxPayload:2048});
 const rooms=new Map(),rpgRooms=new Map(),A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let nid=1,rpgNid=1;
 const newCode=()=>{for(;;){const b=crypto.randomBytes(6);let s='';for(const x of b)s+=A[x%32];if(!rooms.has(s)&&!rpgRooms.has(s))return s}};
-const rpgClean=s=>String(s==null?'':s).replace(/[<>&\"'`\\u0000-\\u001f]/g,'').trim().slice(0,12)||'모험가';
+const rpgClean=s=>String(s==null?'':s).replace(/[<>&\"']/g,'').replace(/[\x00-\x1f]/g,'').trim().slice(0,12)||'모험가';
 const rpgPub=p=>({id:p.id,name:p.name,x:p.x,y:p.y,region:p.region});
 const rpgState=r=>({t:'rpg-state',code:r.code,players:[...r.players.values()].map(rpgPub)});
 const rpgSend=(ws,o)=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify(o))};
