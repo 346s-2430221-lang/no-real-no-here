@@ -90,6 +90,7 @@ wss.on('connection',ws=>{let room=null,pl=null;ws.on('error',()=>{});
    case'leave':removePlayer(room,pl);room=null;pl=null;break}});
  ws.on('close',()=>{if(room&&pl&&pl.ws===ws){if(pl.game==='rpg'){room.players.delete(pl.id);rpgAll(room,{t:'rpg-player-left',id:pl.id});if(!room.players.size)rpgRooms.delete(room.code);rpgBroadcastPublicList();return}pl.ws=null;pl.dc=Date.now();bc(room,{t:'pstate',id:pl.id,online:false});if(!room.started)lobbyAll(room)}})});
 setInterval(()=>{for(const r of rooms.values()){const ch=[];for(const p of r.players.values())if(p.dirty){p.dirty=false;ch.push({id:p.id,x:+p.x.toFixed(2),z:+p.z.toFixed(2),yaw:+p.yaw.toFixed(2)})}if(ch.length)bc(r,{t:'pos',p:ch})}},100);
-setInterval(()=>{for(const r of rpgRooms.values()){r.world.hp=rpgHp();r.world.dead={forest:[],dungeon:[],snow:[],desert:[],swamp:[]};r.world.chests=rpgChests();rpgAll(r,{t:'rpg-reset',world:r.world});}for(const r of [...rooms.values()])for(const p of [...r.players.values()])if(!p.ws&&p.dc&&now-p.dc>30000)removePlayer(r,p)},5000);
+setInterval(()=>{for(const r of rpgRooms.values()){r.world.hp=rpgHp();r.world.dead={forest:[],dungeon:[],snow:[],desert:[],swamp:[]};r.world.chests=rpgChests();rpgAll(r,{t:'rpg-reset',world:r.world});}},RPG_RESET_MS);
+setInterval(()=>{const now=Date.now();for(const r of [...rooms.values()])for(const p of [...r.players.values()])if(!p.ws&&p.dc&&now-p.dc>30000)removePlayer(r,p)},5000);
 if(require.main===module)server.listen(PORT,'0.0.0.0',()=>console.log('NO REAL NO HERE server on :'+PORT));
 module.exports={server,wss,rooms};
