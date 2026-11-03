@@ -1,7 +1,7 @@
 // NO REAL NO HERE 멀티플레이 서버: 정적 파일 + WebSocket. 퍼즐/문/아이템 상태는 서버가 최종 결정한다.
 const http=require('http'),fs=require('fs'),path=require('path'),crypto=require('crypto');
 const {WebSocketServer}=require('ws');const {Rules,LEVELS}=require('../shared/levels.js');
-const PORT=+process.env.PORT||8080,MAXV=+process.env.MAX_SPEED||7,ROOT=path.join(__dirname,'..'),MAXP=+process.env.MAX_PLAYERS||4;
+const PORT=+process.env.PORT||8080,MAXV=+process.env.MAX_SPEED||7,ROOT=path.join(__dirname,'..'),MAXP=+process.env.MAX_PLAYERS||4,MAX_RPG_PLAYERS=24;
 const MIME={'.html':'text/html;charset=utf-8','.css':'text/css','.js':'text/javascript','.md':'text/plain;charset=utf-8'};
 const ALLOW=/^(index\.html|style\.css|src\/[\w.]+\.js|libs\/[\w.]+\.js|shared\/[\w.]+\.js)$/;
 const server=http.createServer((req,res)=>{let u=decodeURIComponent((req.url||'/').split('?')[0]);if(u==='/health'){res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});return res.end(JSON.stringify({ok:true,service:'no-real-no-here',rooms:rooms.size,rpgRooms:rpgRooms.size,uptime:Math.floor(process.uptime())}));}if(u==='/')u='/index.html';const rel=u.replace(/^\/+/,'');
@@ -17,6 +17,8 @@ const rpgState=r=>({t:'rpg-state',code:r.code,players:[...r.players.values()].ma
 const rpgSend=(ws,o)=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify(o))};
 const rpgAll=(r,o,except)=>{for(const p of r.players.values())if(p.id!==except)rpgSend(p.ws,o)};
 const rpgLobby=r=>rpgState(r);
+const rpgPublicList=()=>[...rpgRooms.values()].filter(r=>r.isPublic&&r.players.size>0).map(r=>({code:r.code,name:r.name,players:r.players.size,max:MAX_RPG_PLAYERS}));
+const rpgBroadcastPublicList=()=>{const msg={t:'rpg-server-list',servers:rpgPublicList()};for(const c of wss.clients)rpgSend(c,msg)};
 const send=(ws,o)=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify(o))};
 const bc=(r,o,ex)=>{for(const p of r.players.values())if(p.ws&&p.id!==ex)send(p.ws,o)};
 const clean=s=>String(s==null?'':s).replace(/[<>&"'`\u0000-\u001f]/g,'').trim().slice(0,12)||'Player';
@@ -38,9 +40,9 @@ wss.on('connection',ws=>{let room=null,pl=null;ws.on('error',()=>{});
   if(!pl){ // 방 입장 전에 허용되는 메시지
    if(m.t==='rpg-create'||m.t==='rpg-join'){
     let r;
-    if(m.t==='rpg-create'){r={code:newCode(),players:new Map(),world:{hp:rpgHp(),dead:{forest:[],dungeon:[]}}};rpgRooms.set(r.code,r)}
-    else {const code=typeof m.code==='string'?m.code.trim().toUpperCase():'';r=rpgRooms.get(code);if(!r)return send(ws,{t:'rpg-error',msg:'방 코드가 틀렸어. 다시 확인해 줘!'});if(r.players.size>=8)return send(ws,{t:'rpg-error',msg:'방이 가득 찼어! 최대 8명이야.'})}
-    room=r;pl={game:'rpg',id:'r'+(rpgNid++),name:rpgClean(m.name),ws,x:320,y:230,region:'town',pt:now,bucket:60,bt:now};r.players.set(pl.id,pl);send(ws,{t:'rpg-joined',you:pl.id,code:r.code,players:[...r.players.values()].map(rpgPub),world:r.world});rpgAll(r,{t:'rpg-player-joined',player:rpgPub(pl)},pl.id);return;
+    if(m.t==='rpg-create'){r={code:newCode(),name:rpgClean(m.serverName||'별빛 모험 서버'),isPublic:m.public===true,players:new Map(),world:{hp:rpgHp(),dead:{forest:[],dungeon:[]}}};rpgRooms.set(r.code,r)}
+    else {const code=typeof m.code==='string'?m.code.trim().toUpperCase():'';r=rpgRooms.get(code);if(!r)return send(ws,{t:'rpg-error',msg:'방 코드가 틀렸어. 다시 확인해 줘!'});if(r.players.size>=MAX_RPG_PLAYERS)return send(ws,{t:'rpg-error',msg:'서버가 가득 찼어! 최대 24명이야.'})}
+    room=r;pl={game:'rpg',id:'r'+(rpgNid++),name:rpgClean(m.name),ws,x:320,y:230,region:'town',pt:now,bucket:60,bt:now};r.players.set(pl.id,pl);send(ws,{t:'rpg-joined',you:pl.id,code:r.code,players:[...r.players.values()].map(rpgPub),world:r.world});rpgAll(r,{t:'rpg-player-joined',player:rpgPub(pl)},pl.id);rpgBroadcastPublicList();return;
    }
    if(m.t==='create'){room={code:newCode(),level:'level0',states:{},players:new Map(),host:null,dead:0,started:false};rooms.set(room.code,room);ensure(room,'level0');pl=addPlayer(room,ws,m.name);send(ws,joined(room,pl));send(ws,lobby(room))}
    else if(m.t==='join'){const r=typeof m.code==='string'&&/^[A-Z2-9]{6}$/.test(m.code)&&rooms.get(m.code);if(!r)return send(ws,{t:'err',msg:'잘못된 방 코드입니다'});
@@ -81,7 +83,7 @@ wss.on('connection',ws=>{let room=null,pl=null;ws.on('error',()=>{});
    case'exit':{if(!Rules.doorOpen(L,st,'exit')||dist(pl,Rules.exitPt(L))>5)return;if(!L.next)return bc(room,{t:'end'});
     room.level=L.next;ensure(room,room.level);for(const q of room.players.values())spawn(room,q);bc(room,{t:'level',id:room.level,state:view(room)});break}
    case'leave':removePlayer(room,pl);room=null;pl=null;break}});
- ws.on('close',()=>{if(room&&pl&&pl.ws===ws){if(pl.game==='rpg'){room.players.delete(pl.id);rpgAll(room,{t:'rpg-player-left',id:pl.id});if(!room.players.size)rpgRooms.delete(room.code);return}pl.ws=null;pl.dc=Date.now();bc(room,{t:'pstate',id:pl.id,online:false});if(!room.started)lobbyAll(room)}})});
+ ws.on('close',()=>{if(room&&pl&&pl.ws===ws){if(pl.game==='rpg'){room.players.delete(pl.id);rpgAll(room,{t:'rpg-player-left',id:pl.id});if(!room.players.size)rpgRooms.delete(room.code);rpgBroadcastPublicList();return}pl.ws=null;pl.dc=Date.now();bc(room,{t:'pstate',id:pl.id,online:false});if(!room.started)lobbyAll(room)}})});
 setInterval(()=>{for(const r of rooms.values()){const ch=[];for(const p of r.players.values())if(p.dirty){p.dirty=false;ch.push({id:p.id,x:+p.x.toFixed(2),z:+p.z.toFixed(2),yaw:+p.yaw.toFixed(2)})}if(ch.length)bc(r,{t:'pos',p:ch})}},100);
 setInterval(()=>{const now=Date.now();for(const r of [...rooms.values()])for(const p of [...r.players.values()])if(!p.ws&&p.dc&&now-p.dc>30000)removePlayer(r,p)},5000);
 if(require.main===module)server.listen(PORT,'0.0.0.0',()=>console.log('NO REAL NO HERE server on :'+PORT));
