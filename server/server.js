@@ -11,7 +11,9 @@ const rooms=new Map(),rpgRooms=new Map(),A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';le
 const newCode=()=>{for(;;){const b=crypto.randomBytes(6);let s='';for(const x of b)s+=A[x%32];if(!rooms.has(s)&&!rpgRooms.has(s))return s}};
 const rpgClean=s=>String(s==null?'':s).replace(/[<>&\"']/g,'').replace(/[\x00-\x1f]/g,'').trim().slice(0,12)||'모험가';
 const rpgPub=p=>({id:p.id,name:p.name,x:p.x,y:p.y,region:p.region});
-const rpgState=r=>({t:'rpg-state',code:r.code,players:[...r.players.values()].map(rpgPub)});
+const rpgHp=()=>({forest:[2,2,2,2,2],dungeon:[4,2,4,2,18]});
+const rpgWorld=r=>r.world;
+const rpgState=r=>({t:'rpg-state',code:r.code,players:[...r.players.values()].map(rpgPub),world:r.world});
 const rpgSend=(ws,o)=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify(o))};
 const rpgAll=(r,o,except)=>{for(const p of r.players.values())if(p.id!==except)rpgSend(p.ws,o)};
 const rpgLobby=r=>rpgState(r);
@@ -36,9 +38,9 @@ wss.on('connection',ws=>{let room=null,pl=null;ws.on('error',()=>{});
   if(!pl){ // 방 입장 전에 허용되는 메시지
    if(m.t==='rpg-create'||m.t==='rpg-join'){
     let r;
-    if(m.t==='rpg-create'){r={code:newCode(),players:new Map()};rpgRooms.set(r.code,r)}
+    if(m.t==='rpg-create'){r={code:newCode(),players:new Map(),world:{hp:rpgHp(),dead:{forest:[],dungeon:[]}}};rpgRooms.set(r.code,r)}
     else {const code=typeof m.code==='string'?m.code.trim().toUpperCase():'';r=rpgRooms.get(code);if(!r)return send(ws,{t:'rpg-error',msg:'방 코드가 틀렸어. 다시 확인해 줘!'});if(r.players.size>=8)return send(ws,{t:'rpg-error',msg:'방이 가득 찼어! 최대 8명이야.'})}
-    room=r;pl={game:'rpg',id:'r'+(rpgNid++),name:rpgClean(m.name),ws,x:320,y:230,region:'town',bucket:60,bt:now};r.players.set(pl.id,pl);send(ws,{t:'rpg-joined',you:pl.id,code:r.code,players:[...r.players.values()].map(rpgPub)});rpgAll(r,{t:'rpg-player-joined',player:rpgPub(pl)},pl.id);return;
+    room=r;pl={game:'rpg',id:'r'+(rpgNid++),name:rpgClean(m.name),ws,x:320,y:230,region:'town',bucket:60,bt:now};r.players.set(pl.id,pl);send(ws,{t:'rpg-joined',you:pl.id,code:r.code,players:[...r.players.values()].map(rpgPub),world:r.world});rpgAll(r,{t:'rpg-player-joined',player:rpgPub(pl)},pl.id);return;
    }
    if(m.t==='create'){room={code:newCode(),level:'level0',states:{},players:new Map(),host:null,dead:0,started:false};rooms.set(room.code,room);ensure(room,'level0');pl=addPlayer(room,ws,m.name);send(ws,joined(room,pl));send(ws,lobby(room))}
    else if(m.t==='join'){const r=typeof m.code==='string'&&/^[A-Z2-9]{6}$/.test(m.code)&&rooms.get(m.code);if(!r)return send(ws,{t:'err',msg:'잘못된 방 코드입니다'});
@@ -49,7 +51,8 @@ wss.on('connection',ws=>{let room=null,pl=null;ws.on('error',()=>{});
   if(pl.game==='rpg'){
    switch(m.t){
     case'rpg-pos':{const x=Number(m.x),y=Number(m.y),region=typeof m.region==='string'&&['town','forest','dungeon'].includes(m.region)?m.region:pl.region;if(!Number.isFinite(x)||!Number.isFinite(y)||x<24||x>616||y<24||y>376)return;const dt=Math.min(1000,Math.max(50,now-pl.pt));if(Math.hypot(x-pl.x,y-pl.y)>260*dt/1000+22)return;pl.x=x;pl.y=y;pl.region=region;pl.pt=now;rpgAll(room,{t:'rpg-pos',player:rpgPub(pl)},pl.id);break}
-    case'rpg-region':{if(!['town','forest','dungeon'].includes(m.region))return;pl.region=m.region;rpgAll(room,{t:'rpg-region',id:pl.id,region:pl.region},pl.id);break}
+    case'rpg-region':{if(!['town','forest','dungeon'].includes(m.region))return;pl.region=m.region;rpgAll(room,{t:'rpg-region',id:pl.id,region:pl.region},pl.id);rpgSend(ws,{t:'rpg-world',world:room.world});break}
+    case'rpg-hit':{const region=m.region,index=m.index,damage=Number(m.damage);if(!['forest','dungeon'].includes(region)||pl.region!==region||!Number.isInteger(index)||index<0||index>=room.world.hp[region].length||!Number.isFinite(damage))return;const hp=room.world.hp[region];if(hp[index]<=0)return;const dealt=Math.max(1,Math.min(8,Math.floor(damage)));hp[index]=Math.max(0,hp[index]-dealt);if(hp[index]===0&&!room.world.dead[region].includes(index))room.world.dead[region].push(index);rpgAll(room,{t:'rpg-monster-state',region,index,hp:hp[index],alive:hp[index]>0,by:pl.id,world:room.world});rpgSend(ws,{t:'rpg-monster-state',region,index,hp:hp[index],alive:hp[index]>0,by:pl.id,world:room.world});break}
     case'rpg-leave':{room.players.delete(pl.id);rpgAll(room,{t:'rpg-player-left',id:pl.id});if(!room.players.size)rpgRooms.delete(room.code);room=null;pl=null;break}
     case'rpg-chat':{if(typeof m.text!=='string')return;const text=m.text.replace(/[\\u0000-\\u001f]/g,' ').trim().slice(0,120);if(text)for(const p of room.players.values())rpgSend(p.ws,{t:'rpg-chat',name:pl.name,text});break}
    }
