@@ -26,6 +26,8 @@ https://346s-2430221-lang.github.io/no-real-no-here/pixel-rpg/
 - 저장 및 불러오기 (현재 브라우저의 로컬 저장소)
 - PC 키보드 및 모바일/태블릿 터치 조작
 - Render WebSocket 서버를 이용한 온라인 멀티플레이: 방 만들기, 6자리 코드로 친구 초대, 실시간 캐릭터 위치 동기화
+- 온라인 방에서 몬스터 체력과 처치 상태 동기화
+- 친구와 실시간 채팅
 
 ## 실행
 1. `pixel-rpg/index.html`을 브라우저에서 열거나 위 GitHub Pages 주소에 접속합니다.
@@ -33,4 +35,4 @@ https://346s-2430221-lang.github.io/no-real-no-here/pixel-rpg/
 3. 어둠의 던전에 들어가 몬스터와 보스를 처치하세요.
 4. 진행 상황은 저장 버튼으로 저장할 수 있습니다.
 
-싱글플레이는 정적 HTML/CSS/JavaScript로 실행됩니다. 온라인 멀티플레이는 Render의 `wss://no-real-no-here.onrender.com` 서버에 연결되며, 서버가 배포 중이거나 잠들어 있으면 첫 연결에 시간이 걸릴 수 있습니다.
+싱글플레이는 정적 HTML/CSS/JavaScript로 실행됩니다. 온라인 멀티플레이는 Render의 `wss://no-real-no-here.onrender.com` 서버에 연결됩니다. 방 코드를 친구와 공유해 입장하고, 같은 지역에서 캐릭터와 몬스터 전투 상태를 함께 확인할 수 있습니다. Render 서비스가 잠들어 있으면 첫 연결에 시간이 걸릴 수 있습니다.
