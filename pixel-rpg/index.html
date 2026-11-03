@@ -34,29 +34,40 @@ swamp:{name:'안개늪지',walls:[...edgeWalls,[5,9,4,2],[14,5,3,4],[24,14,4,2],
 };
 let bgmEnabled=true,bgmTimer=null,bgmStep=0,bgmRegion='',bgmMaster=null;
 const BGM_TRACKS={
- town:{tempo:520,scale:[0,3,5,7,10,12,10,7],root:220,wave:'sine',bass:110,volume:.025},
- forest:{tempo:610,scale:[0,3,7,10,7,5,3,2],root:196,wave:'triangle',bass:98,volume:.022},
- dungeon:{tempo:690,scale:[0,1,5,3,0,7,5,1],root:146.83,wave:'sine',bass:73.42,volume:.027},
- farm:{tempo:570,scale:[0,4,7,9,7,4,2,4],root:246.94,wave:'sine',bass:123.47,volume:.022},
- mine:{tempo:640,scale:[0,7,3,10,5,3,7,2],root:164.81,wave:'triangle',bass:82.41,volume:.023},
- snow:{tempo:720,scale:[0,7,12,10,7,5,12,7],root:220,wave:'sine',bass:110,volume:.02},
- desert:{tempo:560,scale:[0,1,5,7,8,7,5,1],root:185,wave:'triangle',bass:92.5,volume:.023},
- swamp:{tempo:680,scale:[0,3,1,7,5,1,3,0],root:174.61,wave:'sine',bass:87.31,volume:.024}
+ town:{tempo:440,scale:[0,3,7,10,7,5,3,2,0,3,5,10,7,5,3,7],root:220,wave:'sine',bass:110,volume:.018,arp:[0,7,12,7]},
+ forest:{tempo:520,scale:[0,3,7,10,12,10,7,5,3,7,10,14,12,10,7,3],root:196,wave:'triangle',bass:98,volume:.017,arp:[0,7,12,10]},
+ dungeon:{tempo:570,scale:[0,1,5,3,0,7,5,1,0,3,7,5,1,5,3,0],root:146.83,wave:'sine',bass:73.42,volume:.019,arp:[0,3,7,10]},
+ farm:{tempo:470,scale:[0,4,7,9,12,9,7,4,2,4,7,11,9,7,4,2],root:246.94,wave:'sine',bass:123.47,volume:.017,arp:[0,4,7,12]},
+ mine:{tempo:540,scale:[0,7,3,10,5,3,7,2,0,5,10,7,3,7,5,2],root:164.81,wave:'triangle',bass:82.41,volume:.018,arp:[0,7,10,12]},
+ snow:{tempo:620,scale:[0,7,12,10,7,5,12,7,2,7,14,12,10,7,5,12],root:220,wave:'sine',bass:110,volume:.016,arp:[0,7,12,19]},
+ desert:{tempo:460,scale:[0,1,5,7,8,7,5,1,0,5,8,7,1,5,7,1],root:185,wave:'triangle',bass:92.5,volume:.018,arp:[0,1,7,8]},
+ swamp:{tempo:560,scale:[0,3,1,7,5,1,3,0,0,3,5,7,3,1,5,0],root:174.61,wave:'sine',bass:87.31,volume:.018,arp:[0,3,7,10]}
 };
 function musicNote(freq,duration,wave,volume,when){
  if(!audioContext||!bgmEnabled||!soundEnabled)return;
  const o=audioContext.createOscillator(),g=audioContext.createGain(),f=audioContext.createBiquadFilter();
- o.type=wave;o.frequency.setValueAtTime(freq,when);f.type='lowpass';f.frequency.value=wave==='triangle'?1000:1800;
- g.gain.setValueAtTime(.0001,when);g.gain.exponentialRampToValueAtTime(Math.max(.0002,volume),when+.06);g.gain.exponentialRampToValueAtTime(.0001,when+duration);
- o.connect(f);f.connect(g);g.connect(audioContext.destination);o.start(when);o.stop(when+duration+.03);
+ o.type=wave;o.frequency.setValueAtTime(freq,when);f.type='lowpass';f.frequency.setValueAtTime(wave==='triangle'?1250:2100,when);
+ g.gain.setValueAtTime(.0001,when);g.gain.exponentialRampToValueAtTime(Math.max(.0002,volume),when+.045);g.gain.exponentialRampToValueAtTime(.0001,when+duration);
+ o.connect(f);f.connect(g);g.connect(audioContext.destination);o.start(when);o.stop(when+duration+.035);
 }
 function bgmTick(){
  if(!bgmEnabled||!soundEnabled||!audioContext)return;
  const track=BGM_TRACKS[region]||BGM_TRACKS.town,step=bgmStep%track.scale.length,now=audioContext.currentTime;
- const freq=track.root*Math.pow(2,track.scale[step]/12);
- musicNote(freq,track.tempo/1000*.82,track.wave,track.volume,now);
- if(step===0||step===4)musicNote(track.bass*(step===4?1.5:1),track.tempo/1000*1.5,'sine',track.volume*.8,now);
- if(step===0)musicNote(track.root*.5,track.tempo/1000*7,'sine',track.volume*.38,now);
+ const freq=track.root*Math.pow(2,track.scale[step]/12),beat=track.tempo/1000;
+ musicNote(freq,beat*.9,track.wave,track.volume,now);
+ // Soft chord pad gives each region a fuller, dreamy RPG soundtrack.
+ if(step%4===0){
+  const chord=[0,3,7];const quality=(region==='farm'||region==='town')?[0,4,7]:chord;
+  quality.forEach((semi,j)=>musicNote(track.root*.5*Math.pow(2/semi?Math.pow(2,semi/12):1,1),beat*3.7,'sine',track.volume*.19,now));
+ }
+ // Warm bass pulse and a light, bell-like arpeggio.
+ if(step%4===0||step%4===2)musicNote(track.bass*(step%4===2?1.5:1),beat*1.7,'sine',track.volume*.72,now);
+ if(step%2===0){
+  const arp=track.arp[(Math.floor(bgmStep/2))%track.arp.length];
+  musicNote(track.root*2*Math.pow(2,arp/12),beat*.48,'sine',track.volume*.34,now+beat*.12);
+ }
+ // Quiet heartbeat-like percussion in the dungeon and mine.
+ if((region==='dungeon'||region==='mine')&&step%4===0)musicNote(58,beat*.22,'triangle',track.volume*.25,now);
  bgmStep++;
 }
 function startBGM(force=false){
